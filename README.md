@@ -9,7 +9,7 @@ Declare tab bankruptcy and save all your open tabs to bookmarks before starting 
 - **Flexible Options**:
   - Close tabs after saving (or keep them open)
   - Save only current window or all windows
-- **Smart Filtering**: Skips invalid URLs (chrome://, edge://, etc.)
+- **Smart Filtering**: Skips browser-internal URLs (chrome://, edge://, etc.) while preserving file:// tabs when Chrome file URL access is enabled
 - **Safe Cleanup**: Ensures at least one tab remains open to prevent closing the browser
 
 ## Demo
@@ -25,6 +25,16 @@ Declare tab bankruptcy and save all your open tabs to bookmarks before starting 
 3. Enable "Developer mode" (toggle in top right)
 4. Click "Load unpacked"
 5. Select the `tab-bankruptcy` directory
+
+### File URL Access
+
+Chrome requires a per-extension setting before extensions can handle local `file://` tabs:
+
+1. Open `chrome://extensions/`
+2. Open **Details** for Tab Bankruptcy
+3. Turn on **Allow access to file URLs**
+
+Without this setting, `file://` tabs may be invisible to the extension and can be left behind when declaring bankruptcy.
 
 ### Adding Icons (Optional)
 
@@ -44,6 +54,8 @@ Create a simple icon or use a placeholder until you have proper icons.
    - **Current window only**: Only save tabs from the current window
 4. Click "Declare Bankruptcy"
 5. Your tabs will be saved to a new bookmark folder
+
+`file://` tabs are included only when Chrome's **Allow access to file URLs** toggle is enabled for this extension.
 
 ## Bookmark Structure
 
@@ -67,6 +79,8 @@ Bookmarks Bar/
 
 - **Manifest Version**: V3 (latest Chrome extension standard)
 - **Permissions**: `bookmarks`, `tabs`
+- **File URL Access**: `file://` support also requires Chrome's manual **Allow access to file URLs** toggle on the extension details page
+- **Release Policy**: Source-only updates via git; see `CHANGELOG.md`
 - **Architecture**:
   - Service worker (background.js) handles bookmark operations
   - Popup UI (popup.html/js) for user interaction
@@ -92,9 +106,9 @@ tab-bankruptcy/
 
 ### Key Functions
 
-**background.js:248**
+**background.js**
 - `handleBankruptcy()` - Main logic for saving tabs and creating bookmark structure
-- `isValidUrl()` - Filters out invalid URLs that can't be bookmarked
+- `isValidUrl()` - Filters out browser-internal URLs that should not be bookmarked
 
 **popup.js:58**
 - `updateStats()` - Displays current tab/window counts
@@ -103,10 +117,14 @@ tab-bankruptcy/
 ## Error Handling
 
 - Validates bookmark creation success
-- Skips invalid URLs (chrome://, edge://, etc.)
+- Skips browser-internal URLs (chrome://, edge://, etc.)
 - Ensures at least one tab remains open
 - Provides user feedback for errors
 - Continues processing even if individual tabs fail
+
+## Common Issues
+
+**File tabs are left behind**: Open `chrome://extensions/`, open Tab Bankruptcy details, and enable **Allow access to file URLs**.
 
 ## License
 

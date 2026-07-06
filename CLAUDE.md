@@ -16,6 +16,11 @@ Load extension in Chrome:
 
 After code changes, click the reload icon on the extension card at `chrome://extensions/`
 
+For `file://` tab support, Chrome also requires the per-extension **Allow access to file URLs** toggle:
+1. Navigate to `chrome://extensions/`
+2. Open the Tab Bankruptcy extension details
+3. Enable **Allow access to file URLs**
+
 ## Architecture
 
 **Message Passing Pattern**:
@@ -52,8 +57,10 @@ Bookmarks Bar/
 - Moves to index 0 if exists but not first
 - Returns folder for use as parent
 
-**URL Validation** (`isValidUrl()` in background.js:159-173):
-- Filters out chrome://, chrome-extension://, edge://, about:, data:, file://
+**URL Validation** (`isValidUrl()` in background.js:159-175):
+- Filters out chrome://, chrome-extension://, edge://, about:, data:
+- Includes file:// URLs so local file tabs are counted, bookmarked, and optionally closed when Chrome exposes them to the extension
+- Requires Chrome's per-extension **Allow access to file URLs** setting for file:// behavior
 - Only valid URLs are counted and bookmarked
 
 **Tab Closing Safety** (background.js:124-140):
@@ -75,9 +82,11 @@ magick icon.svg -resize 128x128 icon128.png
 
 - `bookmarks`: Create/manage bookmark folders and items
 - `tabs`: Query open tabs and windows, close tabs
+- Chrome extension details toggle: **Allow access to file URLs** for local file tabs
 
 ## Common Issues
 
 **Extension not loading**: Check manifest.json syntax, verify all referenced files exist
 **Bookmarks not saving**: Check console at `chrome://extensions/` → extension details → service worker "inspect views"
+**File tabs left behind**: Enable **Allow access to file URLs** on the extension details page at `chrome://extensions/`
 **Tabs not closing**: Verify "Close tabs after saving" checkbox state, check browser console for errors

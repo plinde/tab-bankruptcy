@@ -95,7 +95,7 @@ async function handleBankruptcy(closeTabs, currentWindowOnly) {
 
       // Save each tab as a bookmark
       for (const tab of tabs) {
-        // Skip invalid URLs (chrome://, edge://, etc.)
+        // Skip browser-internal URLs that cannot be usefully bookmarked.
         if (!isValidUrl(tab.url)) {
           continue;
         }
@@ -159,15 +159,17 @@ async function handleBankruptcy(closeTabs, currentWindowOnly) {
 function isValidUrl(url) {
   if (!url) return false;
 
-  // Skip Chrome internal pages
+  const normalizedUrl = url.toLowerCase();
+
+  // Skip browser-internal pages. file:// tabs are bookmarkable and should be
+  // saved/closed with the rest of the bankruptcy batch.
   const invalidPrefixes = [
     'chrome://',
     'chrome-extension://',
     'edge://',
     'about:',
-    'data:',
-    'file://'
+    'data:'
   ];
 
-  return !invalidPrefixes.some(prefix => url.startsWith(prefix));
+  return !invalidPrefixes.some(prefix => normalizedUrl.startsWith(prefix));
 }
