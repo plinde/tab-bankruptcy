@@ -21,6 +21,12 @@ For `file://` tab support, Chrome also requires the per-extension **Allow access
 2. Open the Tab Bankruptcy extension details
 3. Enable **Allow access to file URLs**
 
+## Release Policy
+
+- Source-only updates via git; do not create release bundles or build artifacts.
+- For user-facing behavior changes, increment `manifest.json` using semantic versioning.
+- Record versioned changes in `CHANGELOG.md`.
+
 ## Architecture
 
 **Message Passing Pattern**:
