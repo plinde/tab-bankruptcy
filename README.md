@@ -11,6 +11,8 @@ Declare tab bankruptcy and save all your open tabs to bookmarks before starting 
   - Save only current window or all windows
 - **Smart Filtering**: Skips invalid URLs (chrome://, edge://, etc.)
 - **Safe Cleanup**: Ensures at least one tab remains open to prevent closing the browser
+- **Profile-aware**: Works on any Chrome profile — signed-in profiles with account
+  (synced) bookmarks, local-only profiles, or both (saves to the synced bar when both exist)
 
 ## Demo
 
@@ -82,6 +84,8 @@ tab-bankruptcy/
 ├── popup.html            # Extension popup UI
 ├── popup.js              # Popup interaction logic
 ├── background.js         # Service worker for bookmark operations
+├── bookmarks-bar.js      # Pure Bookmarks Bar resolver (profile/account-aware)
+├── bookmarks-bar.test.js # Unit tests for the resolver (`npm test`)
 ├── styles.css            # Popup styling
 ├── icons/                # Extension icons
 │   ├── icon16.png
@@ -99,6 +103,18 @@ tab-bankruptcy/
 **popup.js:58**
 - `updateStats()` - Displays current tab/window counts
 - Message passing to background script via `chrome.runtime.sendMessage()`
+
+### Testing
+
+The Bookmarks Bar resolution logic is a pure function (`bookmarks-bar.js`) with no
+browser dependencies, so it can be unit-tested with Node's built-in test runner:
+
+```bash
+npm test
+```
+
+Tests cover local-only profiles, account-bookmarks-only profiles, profiles with
+both bars (synced-bar precedence), and the no-bar error case.
 
 ## Error Handling
 

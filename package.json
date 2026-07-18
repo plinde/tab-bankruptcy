@@ -1,0 +1,9 @@
+{
+  "name": "tab-bankruptcy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Save all open browser tabs to organized bookmarks and declare tab bankruptcy",
+  "scripts": {
+    "test": "node --test"
+  }
+}

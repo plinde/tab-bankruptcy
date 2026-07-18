@@ -1,3 +1,6 @@
+// Shared Bookmarks Bar resolver (also unit-tested in Node)
+importScripts('bookmarks-bar.js');
+
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'declareBankruptcy') {
@@ -11,9 +14,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Get or create the top-level 'tab-bankruptcy' folder
 async function getOrCreateTopLevelFolder() {
   const bookmarkTree = await chrome.bookmarks.getTree();
-  const bookmarksBar = bookmarkTree[0].children.find(
-    child => child.id === '1' // Bookmarks Bar has id '1' in Chrome
-  );
+  // Resolve the Bookmarks Bar robustly: works for account (synced) bookmarks,
+  // local (device) bookmarks, or both — preferring the synced bar. Falls back
+  // to the legacy id '1' node on older Chrome. See bookmarks-bar.js.
+  const bookmarksBar = resolveBookmarksBar(bookmarkTree);
 
   if (!bookmarksBar) {
     throw new Error('Could not find Bookmarks Bar');
