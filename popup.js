@@ -73,8 +73,36 @@ document.getElementById('bankruptButton').addEventListener('click', async () => 
   }
 });
 
+// Show which profile this run affects. Runs independently of updateStats() so a
+// slow or denied identity lookup never blocks the tab/window counts. Degrades
+// to the not-signed-in text on any failure (see profile-disclosure.js).
+function updateProfileDisclosure() {
+  const el = document.getElementById('profileIdentity');
+
+  const render = (userInfo) => {
+    el.textContent = formatProfileDisclosure(userInfo);
+  };
+
+  try {
+    // accountStatus: 'ANY' returns an email even when signed in but not syncing.
+    chrome.identity.getProfileUserInfo({ accountStatus: 'ANY' })
+      .then(render)
+      .catch(() => render(null));
+  } catch (error) {
+    // Older Chrome may not accept the details argument or expose the API.
+    try {
+      chrome.identity.getProfileUserInfo(render);
+    } catch (fallbackError) {
+      render(null);
+    }
+  }
+}
+
 // Update stats when window selection changes
 document.getElementById('currentWindowOnly').addEventListener('change', updateStats);
 
-// Initialize stats on popup open
-document.addEventListener('DOMContentLoaded', updateStats);
+// Initialize stats and profile disclosure on popup open (independently)
+document.addEventListener('DOMContentLoaded', () => {
+  updateStats();
+  updateProfileDisclosure();
+});

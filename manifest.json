@@ -5,7 +5,8 @@
   "description": "Save all your open tabs to bookmarks and declare tab bankruptcy",
   "permissions": [
     "bookmarks",
-    "tabs"
+    "tabs",
+    "identity"
   ],
   "web_accessible_resources": [
     {

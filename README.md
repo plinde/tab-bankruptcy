@@ -13,6 +13,23 @@ Declare tab bankruptcy and save all your open tabs to bookmarks before starting 
 - **Safe Cleanup**: Ensures at least one tab remains open to prevent closing the browser
 - **Profile-aware**: Works on any Chrome profile — signed-in profiles with account
   (synced) bookmarks, local-only profiles, or both (saves to the synced bar when both exist)
+- **Profile scope disclosure**: The popup shows which profile a run affects
+  (`Running as: <your-account-email>`) and reminds you that other profiles are
+  untouched — so a large single-profile run is never mistaken for a cross-profile one
+
+## Multiple Chrome profiles
+
+Chrome runs a separate, sandboxed instance of the extension in each profile, and an
+extension can only ever see and act on **its own profile's** tabs, windows, and
+bookmarks. Declaring bankruptcy in one profile never affects another.
+
+To keep this clear, the popup displays `Running as: <email>` (the current profile's
+Google account email; it reads `this Chrome profile (not signed in)` when the profile
+has no signed-in account) plus a reminder that other profiles are not touched.
+
+The extension **cannot** list your other profiles or show their tab/window counts —
+that data lives outside the extension sandbox. To bankrupt another profile, open the
+popup from a window of that profile and run it there.
 
 ## Demo
 
@@ -68,7 +85,8 @@ Bookmarks Bar/
 ## Technical Details
 
 - **Manifest Version**: V3 (latest Chrome extension standard)
-- **Permissions**: `bookmarks`, `tabs`
+- **Permissions**: `bookmarks`, `tabs`, `identity` (reads the current profile's
+  account email to show which profile a run affects)
 - **Architecture**:
   - Service worker (background.js) handles bookmark operations
   - Popup UI (popup.html/js) for user interaction
@@ -86,6 +104,8 @@ tab-bankruptcy/
 ├── background.js         # Service worker for bookmark operations
 ├── bookmarks-bar.js      # Pure Bookmarks Bar resolver (profile/account-aware)
 ├── bookmarks-bar.test.js # Unit tests for the resolver (`npm test`)
+├── profile-disclosure.js # Pure formatter for the popup's "Running as:" line
+├── profile-disclosure.test.js # Unit tests for the disclosure formatter
 ├── styles.css            # Popup styling
 ├── icons/                # Extension icons
 │   ├── icon16.png
