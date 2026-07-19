@@ -24,6 +24,14 @@
       </div>
     </div>
 
+    <div class="profile-scope">
+      <div class="profile-identity" id="profileIdentity">Running as: …</div>
+      <p class="profile-warning">
+        Only this Chrome profile is affected. Other profiles are not touched —
+        run Tab Bankruptcy in each profile separately.
+      </p>
+    </div>
+
     <div class="options">
       <label class="checkbox-label">
         <input type="checkbox" id="closeTabs" checked>
@@ -42,6 +50,7 @@
     <div id="status" class="status"></div>
   </div>
 
+  <script src="profile-disclosure.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

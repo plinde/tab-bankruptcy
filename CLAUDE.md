@@ -29,6 +29,19 @@ npm test   # node --test — covers bookmarks-bar.js resolution
 - `background.js` handles all bookmark/tab operations asynchronously
 - Results passed back to popup for user feedback
 
+**Profile Scope Disclosure** (`updateProfileDisclosure()` in popup.js):
+- The popup shows `Running as: <account-email>` for the current profile, plus a
+  static warning that other profiles are unaffected and must be run separately
+- Email comes from `chrome.identity.getProfileUserInfo({ accountStatus: 'ANY' })`
+  (needs the `identity` permission); falls back to `chrome.identity
+  .getProfileUserInfo(callback)` on older Chrome, then to the not-signed-in text
+- Runs independently of `updateStats()` — a slow/denied identity lookup never
+  blocks the tab/window counts; any failure degrades to the not-signed-in text
+- Display text is produced by the pure `formatProfileDisclosure()` in
+  `profile-disclosure.js`, unit-tested in `profile-disclosure.test.js`
+- Hard limits (Chrome sandbox): the extension **cannot** enumerate other profiles,
+  read their display names, or count their tabs/windows — do not attempt it
+
 **Core Flow**:
 1. User clicks "Declare Bankruptcy" in popup
 2. Popup sends `{action: 'declareBankruptcy', closeTabs, currentWindowOnly}` message
@@ -93,6 +106,8 @@ magick icon.svg -resize 128x128 icon128.png
 
 - `bookmarks`: Create/manage bookmark folders and items
 - `tabs`: Query open tabs and windows, close tabs
+- `identity`: Read the current profile's account email (via
+  `chrome.identity.getProfileUserInfo`) to show which profile a run affects
 
 ## Common Issues
 
