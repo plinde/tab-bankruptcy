@@ -5,11 +5,12 @@ Declare tab bankruptcy and save all your open tabs to bookmarks before starting 
 ## Features
 
 - **Save All Tabs**: Automatically bookmarks all open tabs across all windows
-- **Organized Structure**: Creates timestamped folders with subfolders for each window
+- **Organized Structure**: Creates timestamped folders with a subfolder per saved window
 - **Flexible Options**:
   - Close tabs after saving (or keep them open)
   - Save only current window or all windows
-- **Smart Filtering**: Skips invalid URLs (chrome://, edge://, etc.)
+- **Smart Filtering**: Skips invalid URLs (chrome://, edge://, etc.); windows left
+  with no bookmarkable tabs are skipped entirely (no empty `Window N` folders)
 - **Safe Cleanup**: Ensures at least one tab remains open to prevent closing the browser
 - **Profile-aware**: Works on any Chrome profile — signed-in profiles with account
   (synced) bookmarks, local-only profiles, or both (saves to the synced bar when both exist)
@@ -106,6 +107,8 @@ tab-bankruptcy/
 ├── bookmarks-bar.test.js # Unit tests for the resolver (`npm test`)
 ├── profile-disclosure.js # Pure formatter for the popup's "Running as:" line
 ├── profile-disclosure.test.js # Unit tests for the disclosure formatter
+├── bankruptcy-plan.js    # Pure window planner (drops empty windows, renumbers)
+├── bankruptcy-plan.test.js # Unit tests for the window planner
 ├── styles.css            # Popup styling
 ├── icons/                # Extension icons
 │   ├── icon16.png

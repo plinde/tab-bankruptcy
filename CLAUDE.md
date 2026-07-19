@@ -46,12 +46,23 @@ npm test   # node --test — covers bookmarks-bar.js resolution
 1. User clicks "Declare Bankruptcy" in popup
 2. Popup sends `{action: 'declareBankruptcy', closeTabs, currentWindowOnly}` message
 3. Background script (`handleBankruptcy()`) executes:
-   - Counts valid tabs (filters chrome://, edge://, etc.)
+   - Plans which windows to save via `planBankruptcyWindows()` — only windows
+     with ≥1 bookmarkable tab are kept; empty windows are dropped so no empty
+     `Window N` folder is created, and survivors are renumbered sequentially
+   - If no window in scope has any bookmarkable tab, returns a "No bookmarkable
+     tabs found" message and creates no timestamped folder / closes no tabs
    - Creates/reuses top-level 'tab-bankruptcy' folder at index 0 in Bookmarks Bar
-   - Creates timestamped subfolder: `{ISO8601}-{windowCount}w-{tabCount}t`
-   - Creates Window subfolders (Window 1, Window 2, etc.)
+   - Creates timestamped subfolder: `{ISO8601}-{windowCount}w-{tabCount}t`, where
+     the counts reflect windows/tabs actually saved
+   - Creates a Window subfolder per saved window (Window 1, Window 2, …)
    - Saves each valid tab as bookmark
    - Optionally closes tabs (ensures ≥1 tab remains to prevent closing browser)
+
+**Window Planning** (`planBankruptcyWindows()` in `bankruptcy-plan.js`):
+- Pure function (no `chrome.*`) shared with the service worker via `importScripts`
+  and unit-tested in `bankruptcy-plan.test.js` (`npm test`)
+- Takes each window's tab list + `isValidUrl`; returns `{ windowNumber, tabs }`
+  entries for only the non-empty windows, numbered sequentially from 1
 
 **Bookmark Structure**:
 ```
