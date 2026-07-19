@@ -19,7 +19,7 @@ After code changes, click the reload icon on the extension card at `chrome://ext
 Run the unit tests (pure logic, no browser required) with:
 
 ```bash
-npm test   # node --test — covers bookmarks-bar.js resolution
+npm test   # node --test — covers bookmarks-bar, profile-disclosure, bankruptcy-plan
 ```
 
 ## Architecture
@@ -94,11 +94,11 @@ Bookmarks Bar/
 - Moves to index 0 if exists but not first
 - Returns folder for use as parent
 
-**URL Validation** (`isValidUrl()` in background.js:159-173):
+**URL Validation** (`isValidUrl()` in background.js):
 - Filters out chrome://, chrome-extension://, edge://, about:, data:, file://
 - Only valid URLs are counted and bookmarked
 
-**Tab Closing Safety** (background.js:124-140):
+**Tab Closing Safety** (in `handleBankruptcy()`, background.js):
 - If closing all tabs in current window, creates new tab first
 - Prevents accidentally closing the browser entirely
 
