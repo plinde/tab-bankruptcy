@@ -73,7 +73,7 @@ Bookmarks are organized as follows:
 Bookmarks Bar/
 └── tab-bankruptcy-2025-10-05T10-30-00/
     ├── Window 1/
-    │   ├── GitHub - plinde/tab-bankruptcy
+    │   ├── GitHub - example-org/example-repo
     │   ├── Google Search - Chrome Extensions
     │   └── ...
     ├── Window 2/
