@@ -16,6 +16,12 @@ Load extension in Chrome:
 
 After code changes, click the reload icon on the extension card at `chrome://extensions/`
 
+Run the unit tests (pure logic, no browser required) with:
+
+```bash
+npm test   # node --test — covers bookmarks-bar.js resolution
+```
+
 ## Architecture
 
 **Message Passing Pattern**:
@@ -46,8 +52,20 @@ Bookmarks Bar/
 
 ## Key Implementation Details
 
-**Top-Level Folder Management** (`getOrCreateTopLevelFolder()` in background.js:11-45):
-- Searches Bookmarks Bar (id='1') for existing 'tab-bankruptcy' folder
+**Bookmarks Bar Resolution** (`resolveBookmarksBar()` in `bookmarks-bar.js`):
+- Locates the writable Bookmarks Bar in the active Chrome profile, robust to
+  account (synced) bookmarks, local (device) bookmarks, or both
+- Primary signal: `folderType === 'bookmarks-bar'` (Chrome 134+, id-independent)
+- Precedence when multiple bars exist: prefer the account/synced bar
+  (`syncing === true`), then local, then document order
+- Legacy fallback for older Chrome: the permanent node with id `'1'`
+- Returns `null` (caller throws `Could not find Bookmarks Bar`) only when no bar
+  resolves by any strategy
+- Pure function with no `chrome.*` calls, shared with the service worker via
+  `importScripts` and unit-tested in `bookmarks-bar.test.js` (`npm test`)
+
+**Top-Level Folder Management** (`getOrCreateTopLevelFolder()` in background.js):
+- Within the resolved Bookmarks Bar, searches for existing 'tab-bankruptcy' folder
 - Creates at index 0 if new
 - Moves to index 0 if exists but not first
 - Returns folder for use as parent
@@ -79,5 +97,8 @@ magick icon.svg -resize 128x128 icon128.png
 ## Common Issues
 
 **Extension not loading**: Check manifest.json syntax, verify all referenced files exist
-**Bookmarks not saving**: Check console at `chrome://extensions/` → extension details → service worker "inspect views"
+**Bookmarks not saving / "Could not find Bookmarks Bar"**: Both account-bookmarks
+(signed-in) and local-only profiles are supported. The extension only errors when
+no Bookmarks Bar can be resolved at all. Check console at `chrome://extensions/` →
+extension details → service worker "inspect views"
 **Tabs not closing**: Verify "Close tabs after saving" checkbox state, check browser console for errors
