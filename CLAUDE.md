@@ -22,6 +22,22 @@ Run the unit tests (pure logic, no browser required) with:
 npm test   # node --test — covers bookmarks-bar, profile-disclosure, bankruptcy-plan, domain-grouping
 ```
 
+Run the complete local gate with `npm run validate`.
+
+## Versioning workflow
+
+Every merged change increments `manifest.json` and `package.json` together.
+Use exactly one SemVer step from the base branch:
+
+- **Major** (`X+1.0.0`): breaking behavior or compatibility change
+- **Minor** (`X.Y+1.0`): backward-compatible feature
+- **Patch** (`X.Y.Z+1`): fix, docs, maintenance, or small tweak
+
+Do not defer the source version bump to a later release change. Pull-request CI
+runs `scripts/check-version.sh --base <base-sha>` and rejects unchanged,
+mismatched, malformed, skipped, or multi-component version changes. Tags,
+packaging, and publishing remain separate explicit release operations.
+
 ## Architecture
 
 **Message Passing Pattern**:

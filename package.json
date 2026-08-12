@@ -1,9 +1,11 @@
 {
   "name": "tab-bankruptcy",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Save all open browser tabs to organized bookmarks and declare tab bankruptcy",
   "scripts": {
-    "test": "node --test"
+    "check": "bash scripts/check-version.sh && node --check background.js && node --check popup.js && node --check domain-grouping.js && node -e \"JSON.parse(require('fs').readFileSync('manifest.json', 'utf8'))\"",
+    "test": "node --test",
+    "validate": "npm run check && npm test"
   }
 }
