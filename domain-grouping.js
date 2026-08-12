@@ -1,9 +1,10 @@
-// Plan HTTP(S) hostname groups and exact-URL deduplication without chrome.*.
+// Plan HTTP(S) destination groups and exact-URL deduplication without chrome.*.
 //
 // `windows` is an ordered snapshot of { windowNumber, windowId, tabs }. The
 // first occurrence of a normalized URL is kept; later occurrences are recorded
 // for removal with their original window provenance. Every hostname is
-// actionable, including a hostname represented by one unique tab.
+// actionable, including a hostname represented by one unique tab. GitHub.com
+// tabs are specialized into owner/repository groups when the URL has a slug.
 function planDomainGrouping(windows) {
   const groupsByDomain = new Map();
   const firstByUrl = new Map();
@@ -25,7 +26,7 @@ function planDomainGrouping(windows) {
 
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') continue;
 
-      const domain = parsed.hostname.toLowerCase();
+      const domain = groupingDomain(parsed);
       if (!domain) continue;
 
       const normalizedUrl = parsed.href;
@@ -65,6 +66,17 @@ function planDomainGrouping(windows) {
   };
 }
 
+function groupingDomain(parsed) {
+  const hostname = parsed.hostname.toLowerCase();
+  if (hostname !== 'github.com') return hostname;
+
+  const pathSegments = parsed.pathname.split('/').filter(Boolean);
+  if (pathSegments.length < 2) return hostname;
+
+  const [owner, repository] = pathSegments;
+  return `${hostname}/${owner.toLowerCase()}/${repository.toLowerCase()}`;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { planDomainGrouping };
+  module.exports = { planDomainGrouping, groupingDomain };
 }

@@ -57,14 +57,52 @@ test('query and fragment differences are not exact duplicates', () => {
 test('keeps distinct subdomains separate and preserves tab order', () => {
   const plan = planDomainGrouping([
     window(1, 101, [
-      tab('https://github.com/a', 1),
+      tab('https://github.com/', 1),
       tab('https://gist.github.com/a', 2),
     ]),
-    window(2, 202, [tab('http://GITHUB.COM/b', 3)]),
+    window(2, 202, [tab('http://GITHUB.COM/explore', 3)]),
   ]);
 
   assert.deepEqual(plan.groups.map(group => group.domain), ['github.com', 'gist.github.com']);
   assert.deepEqual(plan.groups[0].tabs.map(item => item.id), [1, 3]);
+});
+
+test('splits github.com tabs by case-insensitive owner and repository slug', () => {
+  const plan = planDomainGrouping([
+    window(1, 101, [
+      tab('https://github.com/Elastic/Kibana', 1),
+      tab('https://github.com/elastic/kibana/issues/1', 2),
+      tab('https://github.com/elastic/elasticsearch/pull/2', 3),
+      tab('https://github.com/openai/codex', 4),
+    ]),
+  ]);
+
+  assert.deepEqual(plan.groups.map(group => group.domain), [
+    'github.com/elastic/kibana',
+    'github.com/elastic/elasticsearch',
+    'github.com/openai/codex',
+  ]);
+  assert.deepEqual(plan.groups.map(group => group.tabs.map(item => item.id)), [
+    [1, 2],
+    [3],
+    [4],
+  ]);
+});
+
+test('keeps github.com URLs without a repository slug in the hostname group', () => {
+  const plan = planDomainGrouping([
+    window(1, 101, [
+      tab('https://github.com/', 1),
+      tab('https://github.com/notifications', 2),
+      tab('https://github.com/elastic/kibana', 3),
+    ]),
+  ]);
+
+  assert.deepEqual(plan.groups.map(group => group.domain), [
+    'github.com',
+    'github.com/elastic/kibana',
+  ]);
+  assert.deepEqual(plan.groups.map(group => group.tabs.map(item => item.id)), [[1, 2], [3]]);
 });
 
 test('ignores local, internal, non-HTTP, malformed, and missing URLs', () => {

@@ -101,7 +101,7 @@ test('removes later exact duplicates before creating/moving domain windows', asy
 
   assert.equal(result.duplicateCount, 1);
   assert.deepEqual(calls[1], ['remove', [3]]);
-  assert.deepEqual(calls[2].slice(0, 3), ['create', 1, 'github.com']);
+  assert.deepEqual(calls[2].slice(0, 3), ['create', 1, 'github.com/org/repo']);
   assert.deepEqual(calls[3], ['move', 2, 900]);
   const report = calls.find(call => call[0] === 'save')[2];
   assert.equal(report.duplicates[0].kept.windowNumber, 1);

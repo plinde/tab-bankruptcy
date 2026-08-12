@@ -10,7 +10,8 @@ Declare tab bankruptcy and save all your open tabs to bookmarks before starting 
   - Close tabs after saving (or keep them open)
   - Save only current window or all windows
 - **Separate Every Domain**: Moves every HTTP(S) hostname into its own dedicated
-  browser window—even when that hostname has only one tab
+  browser window—even when that hostname has only one tab. `github.com` tabs are
+  split further into one window per owner/repository slug
 - **Grouping Audit Report**: Opens a temporary before/after report containing
   every normal window, tab title, URL, and exact-duplicate provenance
 - **Window Links**: Every report card can focus its corresponding live browser
@@ -76,7 +77,8 @@ Create a simple icon or use a placeholder until you have proper icons.
 1. Choose whether **Current window only** should limit the analyzed tabs
 2. Click **Group Tabs by Domain**
 3. Every exact HTTP(S) hostname is moved into its own dedicated window, including
-   hostnames represented by only one tab
+   hostnames represented by only one tab. Each `github.com/<owner>/<repository>`
+   slug gets a separate window
 4. Exact duplicate URLs are reduced to their first occurrence
 5. A temporary report opens with complete before/after window state and the
    original windows for every kept and removed duplicate
@@ -84,9 +86,14 @@ Create a simple icon or use a placeholder until you have proper icons.
 
 Grouping accepts HTTP and HTTPS tabs and matches exact hostnames case-insensitively.
 Paths, query strings, fragments, and HTTP versus HTTPS do not split a domain
-group, but subdomains do: `github.com` and `gist.github.com` become separate
-windows. A domain with one tab still gets its own window. Internal pages,
-`file://` URLs, malformed URLs, and other schemes stay where they are.
+group, except on `github.com`. GitHub URLs with an owner and repository path are
+grouped case-insensitively by their first two path segments, so
+`github.com/elastic/kibana/issues/1` and `github.com/Elastic/Kibana/pull/2` share
+one window. A different repository gets a different window. GitHub root and
+single-segment pages stay in the general `github.com` window. Subdomains remain
+separate, so `gist.github.com` is unaffected. A domain with one tab still gets
+its own window. Internal pages, `file://` URLs, malformed URLs, and other schemes
+stay where they are.
 
 Duplicate identity is normalized exact URL equality. The first occurrence in
 original window/tab order is kept; later exact copies are closed. Query-string
@@ -142,7 +149,7 @@ tab-bankruptcy/
 ├── bankruptcy-plan.test.js # Unit tests for the window planner
 ├── url-validation.js    # Shared bookmark URL eligibility predicate
 ├── url-validation.test.js # Tests all accepted/blocked schemes
-├── domain-grouping.js    # Pure repeated-hostname grouping planner
+├── domain-grouping.js    # Pure hostname/GitHub-repository grouping planner
 ├── domain-grouping.test.js # Unit tests for domain grouping
 ├── grouping-report.js   # Pure report model and summary counts
 ├── grouping-report.test.js # Unit tests for report data
