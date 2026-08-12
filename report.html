@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tab Grouping Report</title>
+  <link rel="stylesheet" href="report.css">
+</head>
+<body>
+  <main>
+    <h1>Tab Grouping Report</h1>
+    <p id="reportMeta" class="meta">Loading temporary report…</p>
+    <div id="reportError" class="error" hidden></div>
+    <section id="reportContent" hidden>
+      <div id="summary" class="summary"></div>
+      <section>
+        <h2>De-duplicates</h2>
+        <div id="duplicates"></div>
+      </section>
+      <section>
+        <h2>Previous state</h2>
+        <p>All normal browser windows before grouping.</p>
+        <div id="beforeWindows" class="windows"></div>
+      </section>
+      <section>
+        <h2>Grouped state</h2>
+        <p>All normal browser windows after grouping, before this report tab opened.</p>
+        <div id="afterWindows" class="windows"></div>
+      </section>
+    </section>
+  </main>
+  <script src="report.js"></script>
+</body>
+</html>

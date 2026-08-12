@@ -1,75 +1,104 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { planDomainGroups } = require('./domain-grouping.js');
+const { planDomainGrouping } = require('./domain-grouping.js');
 
-const tab = (url, id) => ({ url, id, title: url });
+const tab = (url, id, title = url) => ({ url, id, title });
+const window = (windowNumber, windowId, tabs) => ({ windowNumber, windowId, tabs });
 
-test('groups repeated hostnames across windows in first-seen order', () => {
-  const github1 = tab('https://github.com/org/repo/issues/1', 1);
-  const hn1 = tab('https://news.ycombinator.com/item?id=1', 2);
-  const github2 = tab('https://github.com/org/repo/pull/2', 3);
-  const hn2 = tab('https://news.ycombinator.com/newest', 4);
-
-  const plan = planDomainGroups([[github1, hn1], [github2, hn2]]);
-
-  assert.deepEqual(plan.map(group => group.domain), [
-    'github.com',
-    'news.ycombinator.com',
+test('groups every HTTP(S) hostname, including singletons, in first-seen order', () => {
+  const plan = planDomainGrouping([
+    window(1, 101, [
+      tab('file:///tmp/report.html', 1),
+      tab('https://app.example/one', 2),
+      tab('https://dashboard.stripe.com/', 3),
+      tab('https://us-east-1.signin.aws.amazon.com/', 4),
+    ]),
   ]);
-  assert.deepEqual(plan[0].tabs, [github1, github2]);
-  assert.deepEqual(plan[1].tabs, [hn1, hn2]);
-});
 
-test('groups mixed HTTP/HTTPS and hostname case while preserving tab order', () => {
-  const first = tab('HTTP://EXAMPLE.COM/first', 1);
-  const second = tab('https://example.com/second?query=yes#fragment', 2);
-
-  assert.deepEqual(planDomainGroups([[first], [second]]), [
-    { domain: 'example.com', tabs: [first, second] },
+  assert.deepEqual(plan.groups.map(group => group.domain), [
+    'app.example',
+    'dashboard.stripe.com',
+    'us-east-1.signin.aws.amazon.com',
   ]);
+  assert.deepEqual(plan.groups.map(group => group.tabs.map(item => item.id)), [[2], [3], [4]]);
 });
 
-test('keeps distinct subdomains separate', () => {
-  const plan = planDomainGroups([[
-    tab('https://github.com/a', 1),
-    tab('https://gist.github.com/a', 2),
-    tab('https://github.com/b', 3),
-    tab('https://gist.github.com/b', 4),
-  ]]);
-
-  assert.deepEqual(plan.map(group => group.domain), [
-    'github.com',
-    'gist.github.com',
+test('deduplicates normalized exact URLs and records original-window provenance', () => {
+  const kept = tab('HTTPS://GITHUB.COM/org/repo/issues/1', 1, 'Issue first');
+  const removed2 = tab('https://github.com/org/repo/issues/1', 2, 'Issue second');
+  const removed3 = tab('https://github.com/org/repo/issues/1', 3, 'Issue third');
+  const plan = planDomainGrouping([
+    window(1, 101, [kept]),
+    window(2, 202, [removed2, removed3]),
   ]);
+
+  assert.equal(plan.groups.length, 1);
+  assert.deepEqual(plan.groups[0].tabs.map(item => item.id), [1]);
+  assert.equal(plan.duplicates.length, 1);
+  assert.equal(plan.duplicates[0].url, 'https://github.com/org/repo/issues/1');
+  assert.equal(plan.duplicates[0].kept.windowNumber, 1);
+  assert.deepEqual(plan.duplicates[0].removed.map(item => item.windowNumber), [2, 2]);
+  assert.deepEqual(plan.duplicates[0].removed.map(item => item.tab.id), [2, 3]);
 });
 
-test('leaves singleton domains out of the action plan', () => {
-  assert.deepEqual(planDomainGroups([[
-    tab('https://one.example/a', 1),
-    tab('https://two.example/b', 2),
-  ]]), []);
+test('query and fragment differences are not exact duplicates', () => {
+  const plan = planDomainGrouping([
+    window(1, 101, [
+      tab('https://example.com/page?a=1', 1),
+      tab('https://example.com/page?a=2', 2),
+      tab('https://example.com/page?a=1#section', 3),
+    ]),
+  ]);
+
+  assert.equal(plan.duplicates.length, 0);
+  assert.deepEqual(plan.groups[0].tabs.map(item => item.id), [1, 2, 3]);
 });
 
-test('ignores internal, non-HTTP, malformed, and missing URLs', () => {
-  assert.deepEqual(planDomainGroups([[
-    tab('chrome://extensions', 1),
-    tab('file:///tmp/file', 2),
-    tab('ftp://example.com/file', 3),
-    tab('not a URL', 4),
-    { id: 5 },
-    null,
-  ]]), []);
+test('keeps distinct subdomains separate and preserves tab order', () => {
+  const plan = planDomainGrouping([
+    window(1, 101, [
+      tab('https://github.com/a', 1),
+      tab('https://gist.github.com/a', 2),
+    ]),
+    window(2, 202, [tab('http://GITHUB.COM/b', 3)]),
+  ]);
+
+  assert.deepEqual(plan.groups.map(group => group.domain), ['github.com', 'gist.github.com']);
+  assert.deepEqual(plan.groups[0].tabs.map(item => item.id), [1, 3]);
 });
 
-test('only the supplied scope contributes tabs', () => {
-  const currentWindowTabs = [tab('https://github.com/one', 1)];
-  const otherWindowTabs = [tab('https://github.com/two', 2)];
+test('ignores local, internal, non-HTTP, malformed, and missing URLs', () => {
+  const plan = planDomainGrouping([
+    window(1, 101, [
+      tab('chrome://extensions', 1),
+      tab('file:///tmp/file', 2),
+      tab('ftp://example.com/file', 3),
+      tab('not a URL', 4),
+      { id: 5 },
+      null,
+    ]),
+  ]);
 
-  assert.deepEqual(planDomainGroups([currentWindowTabs]), []);
-  assert.equal(planDomainGroups([currentWindowTabs, otherWindowTabs]).length, 1);
+  assert.deepEqual(plan, { groups: [], duplicates: [] });
+});
+
+test('only supplied scoped windows contribute groups or duplicates', () => {
+  const current = window(3, 303, [tab('https://github.com/one', 1)]);
+  const other = window(4, 404, [tab('https://github.com/one', 2)]);
+
+  const currentPlan = planDomainGrouping([current]);
+  assert.equal(currentPlan.groups.length, 1);
+  assert.equal(currentPlan.duplicates.length, 0);
+
+  const allPlan = planDomainGrouping([current, other]);
+  assert.equal(allPlan.duplicates.length, 1);
+  assert.equal(allPlan.duplicates[0].removed[0].windowNumber, 4);
 });
 
 test('handles degenerate window lists safely', () => {
-  assert.deepEqual(planDomainGroups(), []);
-  assert.deepEqual(planDomainGroups([null, undefined, []]), []);
+  assert.deepEqual(planDomainGrouping(), { groups: [], duplicates: [] });
+  assert.deepEqual(planDomainGrouping([null, undefined, { tabs: null }]), {
+    groups: [],
+    duplicates: [],
+  });
 });
