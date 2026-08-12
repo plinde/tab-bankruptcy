@@ -153,6 +153,17 @@ browser dependencies, so it can be unit-tested with Node's built-in test runner:
 npm test
 ```
 
+Run all source and version checks with:
+
+```bash
+npm run validate
+```
+
+Every merged change must increment both `manifest.json` and `package.json` by
+exactly one SemVer step: major for breaking changes, minor for features, patch
+for fixes, documentation, maintenance, and tweaks. Pull-request CI compares the
+new version with the base branch and rejects a missing or invalid increment.
+
 Tests cover local-only profiles, account-bookmarks-only profiles, profiles with
 both bars (synced-bar precedence), the no-bar error case, bankruptcy window
 planning, profile disclosure, and repeated-domain grouping behavior.
