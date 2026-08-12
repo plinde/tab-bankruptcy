@@ -89,13 +89,18 @@ document.getElementById('groupButton').addEventListener('click', async () => {
   button.textContent = 'Grouping...';
 
   try {
+    const currentWindow = currentWindowOnly ? await chrome.windows.getCurrent() : null;
     const response = await chrome.runtime.sendMessage({
       action: 'groupTabsByDomain',
-      currentWindowOnly: currentWindowOnly
+      currentWindowOnly: currentWindowOnly,
+      currentWindowId: currentWindow ? currentWindow.id : null
     });
 
     if (response.success) {
-      showStatus(`Grouped ${response.tabCount} tabs into ${response.domainCount} domain windows.`);
+      showStatus(
+        `Separated ${response.tabCount} tabs into ${response.domainCount} domain windows; ` +
+        `removed ${response.duplicateCount} duplicates. Report opened.`
+      );
       setTimeout(updateStats, 1000);
     } else {
       showStatus(`Error: ${response.error}`, true);

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Chrome extension (Manifest V3) that saves all open browser tabs to organized bookmarks, allowing users to "declare tab bankruptcy," or groups repeated-domain tabs into dedicated windows for manual thinning.
+Chrome extension (Manifest V3) that saves all open browser tabs to organized bookmarks, allowing users to "declare tab bankruptcy," or separates every eligible domain into its own window with exact-URL deduplication and a temporary audit report.
 
 ## Installation & Testing
 
@@ -45,23 +45,47 @@ packaging, and publishing remain separate explicit release operations.
 - `background.js` handles all bookmark/tab operations asynchronously
 - Results passed back to popup for user feedback
 
-**Domain Grouping Flow**:
+**Domain Separation Flow**:
 1. User clicks "Group Tabs by Domain" in popup
-2. Popup sends `{action: 'groupTabsByDomain', currentWindowOnly}`
-3. Background snapshots tabs in all normal windows, or only the current window
-4. `planDomainGroups()` groups HTTP(S) tabs by exact lowercase hostname and keeps
-   only hostnames with at least two tabs
-5. Background creates one unfocused normal window per group and moves the tabs
-   there in discovery order
-6. No bookmarks are created and no tabs are closed or deduplicated; singleton,
-   internal, malformed, and non-HTTP(S) tabs remain untouched
+2. Popup resolves its current window and sends
+   `{action: 'groupTabsByDomain', currentWindowOnly, currentWindowId}`
+3. Background snapshots every normal window; mutation scope is all windows or
+   the invoking current window
+4. `planDomainGrouping()` groups HTTP(S) tabs by exact lowercase hostname,
+   including hostnames with only one tab; normalized exact-URL duplicates keep
+   their first occurrence and record every later occurrence for removal
+5. `executeDomainGrouping()` in `grouping-operation.js` orchestrates injected,
+   testable browser operations: remove later duplicates, create one unfocused
+   normal window per hostname, and move kept tabs there in discovery order
+6. Background snapshots every normal window again, stores a one-shot report in
+   `chrome.storage.local`, and opens `report.html`; the page consumes the data
+7. No bookmarks are created. Internal, local (`file://`), malformed, and
+   non-HTTP(S) tabs remain in their original windows
 
-**Domain Grouping Planner** (`planDomainGroups()` in `domain-grouping.js`):
+**Domain Grouping Planner** (`planDomainGrouping()` in `domain-grouping.js`):
 - Pure function (no `chrome.*`) shared with the service worker via `importScripts`
   and unit-tested in `domain-grouping.test.js`
-- Exact-hostname grouping: subdomains remain separate; HTTP/HTTPS, URL path,
-  query, and fragment differences do not split a hostname group
-- Preserves first-seen hostname order and tab discovery order
+- Exact-hostname grouping: every hostname becomes a window, even a singleton;
+  subdomains remain separate; HTTP/HTTPS, path, query, and fragment differences
+  do not split a hostname group
+- Exact-URL deduplication uses normalized `new URL(url).href`; first occurrence
+  wins, while query/fragment differences remain distinct
+- Preserves first-seen hostname order, tab discovery order, and original-window
+  provenance for the report
+
+**Grouping Report** (`grouping-report.js`, `report.html/js/css`):
+- Shows full before/after normal-window snapshots with titles and URLs
+- Lists every exact duplicate URL, the kept occurrence, and each removed copy's
+  original window
+- Uses DOM `textContent`/element creation for tab-controlled strings; never
+  injects report content as HTML
+- Data is stored under a random `groupingReport:<uuid>` key and removed after
+  the report first loads
+
+**Grouping Operation Tests** (`grouping-operation.test.js`):
+- Mock Chrome operations verify one window per singleton domain, dedupe-before-
+  move ordering, current-window scope, before/after report lifecycle, no-op
+  safety, mutation failure propagation, and cleanup after report-open failure
 
 **Profile Scope Disclosure** (`updateProfileDisclosure()` in popup.js):
 - The popup shows `Running as: <account-email>` for the current profile, plus a
@@ -97,6 +121,11 @@ packaging, and publishing remain separate explicit release operations.
   and unit-tested in `bankruptcy-plan.test.js` (`npm test`)
 - Takes each window's tab list + `isValidUrl`; returns `{ windowNumber, tabs }`
   entries for only the non-empty windows, numbered sequentially from 1
+
+**Bookmark URL Validation** (`isValidUrl()` in `url-validation.js`):
+- Shared with the service worker via `importScripts`, with exact prefix behavior
+  tested in `url-validation.test.js`
+- Rejects missing, Chrome/Edge internal, `about:`, `data:`, and `file://` URLs
 
 **Bookmark Structure**:
 ```
@@ -152,6 +181,7 @@ magick icon.svg -resize 128x128 icon128.png
 - `bookmarks`: Create/manage bookmark folders and items
 - `tabs`: Query open tabs and windows, close tabs
 - `tabs` also permits moving grouped tabs into dedicated browser windows
+- `storage`: Holds one-shot grouping report data until the report page opens
 - `identity`: Read the current profile's account email (via
   `chrome.identity.getProfileUserInfo`) to show which profile a run affects
 

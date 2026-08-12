@@ -9,8 +9,10 @@ Declare tab bankruptcy and save all your open tabs to bookmarks before starting 
 - **Flexible Options**:
   - Close tabs after saving (or keep them open)
   - Save only current window or all windows
-- **Group by Domain**: Moves tabs from any repeated HTTP(S) hostname into one
-  dedicated browser window for manual review, without bookmarking or closing them
+- **Separate Every Domain**: Moves every HTTP(S) hostname into its own dedicated
+  browser window—even when that hostname has only one tab
+- **Grouping Audit Report**: Opens a temporary before/after report containing
+  every normal window, tab title, URL, and exact-duplicate provenance
 - **Smart Filtering**: Skips invalid URLs (chrome://, edge://, etc.); windows left
   with no bookmarkable tabs are skipped entirely (no empty `Window N` folders)
 - **Safe Cleanup**: Ensures at least one tab remains open to prevent closing the browser
@@ -67,18 +69,25 @@ Create a simple icon or use a placeholder until you have proper icons.
 4. Click "Declare Bankruptcy"
 5. Your tabs will be saved to a new bookmark folder
 
-### Group repeated domains for review
+### Separate tabs into domain windows
 
 1. Choose whether **Current window only** should limit the analyzed tabs
 2. Click **Group Tabs by Domain**
-3. Each exact hostname with at least two tabs is moved into its own dedicated window
-4. Review the grouped tabs and manually close duplicates you no longer need
+3. Every exact HTTP(S) hostname is moved into its own dedicated window, including
+   hostnames represented by only one tab
+4. Exact duplicate URLs are reduced to their first occurrence
+5. A temporary report opens with complete before/after window state and the
+   original windows for every kept and removed duplicate
 
 Grouping accepts HTTP and HTTPS tabs and matches exact hostnames case-insensitively.
-Paths, query strings, fragments, and HTTP versus HTTPS do not split a group, but
-subdomains do: `github.com` and `gist.github.com` are separate. Single-tab domains,
-internal pages, malformed URLs, and other URL schemes stay where they are. Grouping
-does not create bookmarks, close tabs, or remove duplicates.
+Paths, query strings, fragments, and HTTP versus HTTPS do not split a domain
+group, but subdomains do: `github.com` and `gist.github.com` become separate
+windows. A domain with one tab still gets its own window. Internal pages,
+`file://` URLs, malformed URLs, and other schemes stay where they are.
+
+Duplicate identity is normalized exact URL equality. The first occurrence in
+original window/tab order is kept; later exact copies are closed. Query-string
+or fragment differences are not duplicates. Grouping creates no bookmarks.
 
 ## Bookmark Structure
 
@@ -124,8 +133,16 @@ tab-bankruptcy/
 ├── profile-disclosure.test.js # Unit tests for the disclosure formatter
 ├── bankruptcy-plan.js    # Pure window planner (drops empty windows, renumbers)
 ├── bankruptcy-plan.test.js # Unit tests for the window planner
+├── url-validation.js    # Shared bookmark URL eligibility predicate
+├── url-validation.test.js # Tests all accepted/blocked schemes
 ├── domain-grouping.js    # Pure repeated-hostname grouping planner
 ├── domain-grouping.test.js # Unit tests for domain grouping
+├── grouping-report.js   # Pure report model and summary counts
+├── grouping-report.test.js # Unit tests for report data
+├── grouping-operation.js # Injected/testable browser-operation orchestration
+├── grouping-operation.test.js # Mutation order, scope, and failure tests
+├── report.html/js/css   # Temporary before/after grouping report
+├── manifest-contract.test.js # Permissions and packaged report surface
 ├── styles.css            # Popup styling
 ├── icons/                # Extension icons
 │   ├── icon16.png
@@ -165,8 +182,9 @@ for fixes, documentation, maintenance, and tweaks. Pull-request CI compares the
 new version with the base branch and rejects a missing or invalid increment.
 
 Tests cover local-only profiles, account-bookmarks-only profiles, profiles with
-both bars (synced-bar precedence), the no-bar error case, bankruptcy window
-planning, profile disclosure, and repeated-domain grouping behavior.
+both bars (synced-bar precedence), the no-bar error case, bankruptcy window and
+URL planning, profile disclosure, every-domain separation, exact deduplication,
+Chrome-operation sequencing/failures, report modeling, and safe DOM rendering.
 
 ## Error Handling
 

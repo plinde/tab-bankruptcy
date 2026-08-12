@@ -1,5 +1,12 @@
 // Shared pure helpers (also unit-tested in Node)
-importScripts('bookmarks-bar.js', 'bankruptcy-plan.js', 'domain-grouping.js');
+importScripts(
+  'bookmarks-bar.js',
+  'bankruptcy-plan.js',
+  'url-validation.js',
+  'domain-grouping.js',
+  'grouping-report.js',
+  'grouping-operation.js'
+);
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -11,65 +18,69 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'groupTabsByDomain') {
-    handleGroupTabsByDomain(request.currentWindowOnly)
+    handleGroupTabsByDomain(request.currentWindowOnly, request.currentWindowId)
       .then(result => sendResponse(result))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
   }
 });
 
-// Consolidate repeated HTTP(S) hostnames into dedicated windows. This action
-// intentionally does not bookmark, close, or deduplicate tabs: it creates a
-// review-friendly layout for the user to thin manually.
-async function handleGroupTabsByDomain(currentWindowOnly) {
+// Deduplicate exact HTTP(S) URLs, consolidate every eligible hostname into a
+// dedicated window, then open a one-shot before/after audit report.
+async function handleGroupTabsByDomain(currentWindowOnly, currentWindowId) {
   try {
-    let windows;
-    if (currentWindowOnly) {
-      windows = [await chrome.windows.getCurrent({ populate: true })];
-    } else {
-      windows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
-    }
-
-    const windowTabLists = [];
-    for (const window of windows) {
-      windowTabLists.push(await chrome.tabs.query({ windowId: window.id }));
-    }
-
-    const groups = planDomainGroups(windowTabLists);
-    if (groups.length === 0) {
-      return {
-        success: false,
-        error: 'No domains with two or more groupable tabs found.'
-      };
-    }
-
-    let tabsGrouped = 0;
-    for (const group of groups) {
-      const [firstTab, ...remainingTabs] = group.tabs;
-      const groupedWindow = await chrome.windows.create({
-        tabId: firstTab.id,
-        focused: false,
-        type: 'normal'
-      });
-
-      if (remainingTabs.length > 0) {
-        await chrome.tabs.move(
-          remainingTabs.map(tab => tab.id),
-          { windowId: groupedWindow.id, index: -1 }
-        );
+    return await executeDomainGrouping(
+      { currentWindowOnly, currentWindowId },
+      {
+        planDomainGrouping,
+        buildGroupingReport,
+        captureNormalWindows,
+        removeTabs: tabIds => chrome.tabs.remove(tabIds),
+        createGroupedWindow: async (tabId, domain) => {
+          const groupedWindow = await chrome.windows.create({
+            tabId,
+            focused: false,
+            type: 'normal'
+          });
+          if (!groupedWindow || groupedWindow.id === undefined) {
+            throw new Error(`Could not create grouped window for ${domain}`);
+          }
+          return groupedWindow.id;
+        },
+        moveTab: (tabId, windowId) => chrome.tabs.move(tabId, { windowId, index: -1 }),
+        saveReport: (key, report) => chrome.storage.local.set({ [key]: report }),
+        openReport: reportId => chrome.tabs.create({
+          url: chrome.runtime.getURL(`report.html?id=${encodeURIComponent(reportId)}`)
+        }),
+        discardReport: key => chrome.storage.local.remove(key),
+        createReportId: () => crypto.randomUUID()
       }
-      tabsGrouped += group.tabs.length;
-    }
-
-    return {
-      success: true,
-      domainCount: groups.length,
-      tabCount: tabsGrouped
-    };
+    );
   } catch (error) {
     console.error('Domain grouping error:', error);
     return { success: false, error: error.message };
   }
+}
+
+async function captureNormalWindows(domainByWindowId = new Map()) {
+  const windows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
+  const snapshot = [];
+
+  for (const [index, window] of windows.entries()) {
+    const tabs = await chrome.tabs.query({ windowId: window.id });
+    snapshot.push({
+      windowNumber: index + 1,
+      windowId: window.id,
+      domain: domainByWindowId.get(window.id) || null,
+      tabs: tabs.map(tab => ({
+        id: tab.id,
+        title: tab.title || tab.url || 'Untitled tab',
+        url: tab.url || ''
+      }))
+    });
+  }
+
+  return snapshot;
 }
 
 // Get or create the top-level 'tab-bankruptcy' folder
@@ -220,21 +231,4 @@ async function handleBankruptcy(closeTabs, currentWindowOnly) {
       error: error.message
     };
   }
-}
-
-// Check if URL is valid for bookmarking
-function isValidUrl(url) {
-  if (!url) return false;
-
-  // Skip Chrome internal pages
-  const invalidPrefixes = [
-    'chrome://',
-    'chrome-extension://',
-    'edge://',
-    'about:',
-    'data:',
-    'file://'
-  ];
-
-  return !invalidPrefixes.some(prefix => url.startsWith(prefix));
 }

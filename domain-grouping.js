@@ -1,14 +1,19 @@
-// Plan repeated-hostname tab groups without depending on chrome.* APIs.
+// Plan HTTP(S) hostname groups and exact-URL deduplication without chrome.*.
 //
-// Input order is significant: Chrome window order, then tab order. The output
-// keeps the first-seen hostname order and each group's original tab order.
-// Only HTTP(S) hostnames with at least two tabs are actionable; singletons and
-// internal or malformed URLs remain untouched.
-function planDomainGroups(windowTabLists) {
+// `windows` is an ordered snapshot of { windowNumber, windowId, tabs }. The
+// first occurrence of a normalized URL is kept; later occurrences are recorded
+// for removal with their original window provenance. Every hostname is
+// actionable, including a hostname represented by one unique tab.
+function planDomainGrouping(windows) {
   const groupsByDomain = new Map();
+  const firstByUrl = new Map();
+  const duplicatesByUrl = new Map();
 
-  for (const tabs of windowTabLists || []) {
-    for (const tab of tabs || []) {
+  for (const [index, window] of (windows || []).entries()) {
+    if (!window) continue;
+    const windowNumber = window.windowNumber || index + 1;
+
+    for (const tab of window.tabs || []) {
       if (!tab || typeof tab.url !== 'string') continue;
 
       let parsed;
@@ -23,17 +28,43 @@ function planDomainGroups(windowTabLists) {
       const domain = parsed.hostname.toLowerCase();
       if (!domain) continue;
 
+      const normalizedUrl = parsed.href;
+      const occurrence = {
+        windowNumber,
+        windowId: window.windowId,
+        tab: {
+          id: tab.id,
+          title: tab.title || tab.url,
+          url: tab.url
+        }
+      };
+
+      if (firstByUrl.has(normalizedUrl)) {
+        if (!duplicatesByUrl.has(normalizedUrl)) {
+          duplicatesByUrl.set(normalizedUrl, {
+            url: normalizedUrl,
+            kept: firstByUrl.get(normalizedUrl),
+            removed: []
+          });
+        }
+        duplicatesByUrl.get(normalizedUrl).removed.push(occurrence);
+        continue;
+      }
+
+      firstByUrl.set(normalizedUrl, occurrence);
       if (!groupsByDomain.has(domain)) {
         groupsByDomain.set(domain, []);
       }
-      groupsByDomain.get(domain).push(tab);
+      groupsByDomain.get(domain).push(occurrence.tab);
     }
   }
 
-  return Array.from(groupsByDomain, ([domain, tabs]) => ({ domain, tabs }))
-    .filter(group => group.tabs.length >= 2);
+  return {
+    groups: Array.from(groupsByDomain, ([domain, tabs]) => ({ domain, tabs })),
+    duplicates: Array.from(duplicatesByUrl.values())
+  };
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { planDomainGroups };
+  module.exports = { planDomainGrouping };
 }
