@@ -9,6 +9,8 @@ Declare tab bankruptcy and save all your open tabs to bookmarks before starting 
 - **Flexible Options**:
   - Close tabs after saving (or keep them open)
   - Save only current window or all windows
+- **Group by Domain**: Moves tabs from any repeated HTTP(S) hostname into one
+  dedicated browser window for manual review, without bookmarking or closing them
 - **Smart Filtering**: Skips invalid URLs (chrome://, edge://, etc.); windows left
   with no bookmarkable tabs are skipped entirely (no empty `Window N` folders)
 - **Safe Cleanup**: Ensures at least one tab remains open to prevent closing the browser
@@ -65,6 +67,19 @@ Create a simple icon or use a placeholder until you have proper icons.
 4. Click "Declare Bankruptcy"
 5. Your tabs will be saved to a new bookmark folder
 
+### Group repeated domains for review
+
+1. Choose whether **Current window only** should limit the analyzed tabs
+2. Click **Group Tabs by Domain**
+3. Each exact hostname with at least two tabs is moved into its own dedicated window
+4. Review the grouped tabs and manually close duplicates you no longer need
+
+Grouping accepts HTTP and HTTPS tabs and matches exact hostnames case-insensitively.
+Paths, query strings, fragments, and HTTP versus HTTPS do not split a group, but
+subdomains do: `github.com` and `gist.github.com` are separate. Single-tab domains,
+internal pages, malformed URLs, and other URL schemes stay where they are. Grouping
+does not create bookmarks, close tabs, or remove duplicates.
+
 ## Bookmark Structure
 
 Bookmarks are organized as follows:
@@ -109,6 +124,8 @@ tab-bankruptcy/
 ├── profile-disclosure.test.js # Unit tests for the disclosure formatter
 ├── bankruptcy-plan.js    # Pure window planner (drops empty windows, renumbers)
 ├── bankruptcy-plan.test.js # Unit tests for the window planner
+├── domain-grouping.js    # Pure repeated-hostname grouping planner
+├── domain-grouping.test.js # Unit tests for domain grouping
 ├── styles.css            # Popup styling
 ├── icons/                # Extension icons
 │   ├── icon16.png
@@ -137,7 +154,8 @@ npm test
 ```
 
 Tests cover local-only profiles, account-bookmarks-only profiles, profiles with
-both bars (synced-bar precedence), and the no-bar error case.
+both bars (synced-bar precedence), the no-bar error case, bankruptcy window
+planning, profile disclosure, and repeated-domain grouping behavior.
 
 ## Error Handling
 

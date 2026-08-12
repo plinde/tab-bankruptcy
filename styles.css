@@ -132,6 +132,40 @@ h1 {
   cursor: not-allowed;
 }
 
+.group-button {
+  width: 100%;
+  padding: 12px 20px;
+  margin-top: 10px;
+  background: #0d6efd;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.group-button:hover {
+  background: #0b5ed7;
+}
+
+.group-button:active {
+  background: #0a58ca;
+}
+
+.group-button:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+.group-description {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #666;
+}
+
 .status {
   margin-top: 16px;
   padding: 12px;

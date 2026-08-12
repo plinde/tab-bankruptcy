@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Chrome extension (Manifest V3) that saves all open browser tabs to organized bookmarks, allowing users to "declare tab bankruptcy."
+Chrome extension (Manifest V3) that saves all open browser tabs to organized bookmarks, allowing users to "declare tab bankruptcy," or groups repeated-domain tabs into dedicated windows for manual thinning.
 
 ## Installation & Testing
 
@@ -19,7 +19,7 @@ After code changes, click the reload icon on the extension card at `chrome://ext
 Run the unit tests (pure logic, no browser required) with:
 
 ```bash
-npm test   # node --test — covers bookmarks-bar, profile-disclosure, bankruptcy-plan
+npm test   # node --test — covers bookmarks-bar, profile-disclosure, bankruptcy-plan, domain-grouping
 ```
 
 ## Architecture
@@ -28,6 +28,24 @@ npm test   # node --test — covers bookmarks-bar, profile-disclosure, bankruptc
 - `popup.js` (UI) sends messages to `background.js` (service worker) via `chrome.runtime.sendMessage()`
 - `background.js` handles all bookmark/tab operations asynchronously
 - Results passed back to popup for user feedback
+
+**Domain Grouping Flow**:
+1. User clicks "Group Tabs by Domain" in popup
+2. Popup sends `{action: 'groupTabsByDomain', currentWindowOnly}`
+3. Background snapshots tabs in all normal windows, or only the current window
+4. `planDomainGroups()` groups HTTP(S) tabs by exact lowercase hostname and keeps
+   only hostnames with at least two tabs
+5. Background creates one unfocused normal window per group and moves the tabs
+   there in discovery order
+6. No bookmarks are created and no tabs are closed or deduplicated; singleton,
+   internal, malformed, and non-HTTP(S) tabs remain untouched
+
+**Domain Grouping Planner** (`planDomainGroups()` in `domain-grouping.js`):
+- Pure function (no `chrome.*`) shared with the service worker via `importScripts`
+  and unit-tested in `domain-grouping.test.js`
+- Exact-hostname grouping: subdomains remain separate; HTTP/HTTPS, URL path,
+  query, and fragment differences do not split a hostname group
+- Preserves first-seen hostname order and tab discovery order
 
 **Profile Scope Disclosure** (`updateProfileDisclosure()` in popup.js):
 - The popup shows `Running as: <account-email>` for the current profile, plus a
@@ -117,6 +135,7 @@ magick icon.svg -resize 128x128 icon128.png
 
 - `bookmarks`: Create/manage bookmark folders and items
 - `tabs`: Query open tabs and windows, close tabs
+- `tabs` also permits moving grouped tabs into dedicated browser windows
 - `identity`: Read the current profile's account email (via
   `chrome.identity.getProfileUserInfo`) to show which profile a run affects
 
