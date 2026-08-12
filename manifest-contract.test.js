@@ -20,6 +20,7 @@ test('temporary report surface and service-worker helpers are packaged source fi
     'report.js',
     'grouping-operation.js',
     'grouping-report.js',
+    'window-focus.js',
     'domain-grouping.js',
     'url-validation.js',
   ]) {

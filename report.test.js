@@ -8,16 +8,23 @@ class FakeElement {
     this.textContent = '';
     this.className = '';
     this.hidden = true;
+    this.disabled = false;
+    this.listeners = new Map();
   }
 
   append(...children) {
     this.children.push(...children);
+  }
+
+  addEventListener(type, listener) {
+    this.listeners.set(type, listener);
   }
 }
 
 function installDocument() {
   const ids = new Map([
     'reportMeta',
+    'reportStatus',
     'reportError',
     'reportContent',
     'summary',
@@ -69,6 +76,8 @@ test('renders report content as text and exposes before/after/duplicate provenan
   assert.equal(ids.get('duplicates').children.length, 1);
   assert.equal(ids.get('beforeWindows').children.length, 1);
   assert.equal(ids.get('afterWindows').children.length, 1);
+  assert.equal(ids.get('beforeWindows').children[0].children[0].children[1].textContent, 'Focus window');
+  assert.equal(ids.get('afterWindows').children[0].children[0].children[1].textContent, 'Focus window');
 
   const beforeTitle = ids.get('beforeWindows').children[0].children[1].children[0].children[0];
   assert.equal(beforeTitle.textContent, hostileTitle);
@@ -76,8 +85,45 @@ test('renders report content as text and exposes before/after/duplicate provenan
   const localUrl = ids.get('beforeWindows').children[0].children[1].children[1].children[1];
   assert.equal(localUrl.tagName, 'span');
   assert.equal(localUrl.textContent, 'file:///tmp/local.html');
-  assert.match(ids.get('afterWindows').children[0].children[0].textContent, /Domain: example\.com/);
+  assert.match(
+    ids.get('afterWindows').children[0].children[0].children[0].textContent,
+    /Domain: example\.com/
+  );
 
+  delete global.document;
+  delete require.cache[require.resolve('./report.js')];
+});
+
+test('focus control reports success and closed-window errors accessibly', async () => {
+  const ids = installDocument();
+  const { focusWindow } = require('./report.js');
+  const button = new FakeElement('button');
+  const messages = [];
+  global.chrome = {
+    runtime: {
+      async sendMessage(message) {
+        messages.push(message);
+        return { success: true };
+      },
+    },
+  };
+
+  await focusWindow(42, 2, button);
+  assert.deepEqual(messages, [{ action: 'focusReportWindow', windowId: 42 }]);
+  assert.equal(ids.get('reportStatus').textContent, 'Focused Window 2.');
+  assert.equal(button.disabled, false);
+
+  global.chrome.runtime.sendMessage = async () => ({
+    success: false,
+    error: 'Could not focus window: No window with id: 42.',
+  });
+  await focusWindow(42, 2, button);
+  assert.match(ids.get('reportStatus').textContent, /Window 2 is unavailable/);
+  assert.match(ids.get('reportStatus').textContent, /No window with id: 42/);
+  assert.equal(ids.get('reportStatus').className, 'report-status error-text');
+  assert.equal(button.disabled, false);
+
+  delete global.chrome;
   delete global.document;
   delete require.cache[require.resolve('./report.js')];
 });

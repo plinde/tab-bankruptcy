@@ -13,6 +13,8 @@ Declare tab bankruptcy and save all your open tabs to bookmarks before starting 
   browser window—even when that hostname has only one tab
 - **Grouping Audit Report**: Opens a temporary before/after report containing
   every normal window, tab title, URL, and exact-duplicate provenance
+- **Window Links**: Every report card can focus its corresponding live browser
+  window directly—no Cmd+Tab hunting
 - **Smart Filtering**: Skips invalid URLs (chrome://, edge://, etc.); windows left
   with no bookmarkable tabs are skipped entirely (no empty `Window N` folders)
 - **Safe Cleanup**: Ensures at least one tab remains open to prevent closing the browser
@@ -78,6 +80,7 @@ Create a simple icon or use a placeholder until you have proper icons.
 4. Exact duplicate URLs are reduced to their first occurrence
 5. A temporary report opens with complete before/after window state and the
    original windows for every kept and removed duplicate
+6. Click **Focus window** on any report card to jump to that live window
 
 Grouping accepts HTTP and HTTPS tabs and matches exact hostnames case-insensitively.
 Paths, query strings, fragments, and HTTP versus HTTPS do not split a domain
@@ -88,6 +91,10 @@ windows. A domain with one tab still gets its own window. Internal pages,
 Duplicate identity is normalized exact URL equality. The first occurrence in
 original window/tab order is kept; later exact copies are closed. Query-string
 or fragment differences are not duplicates. Grouping creates no bookmarks.
+
+Chrome may close an original window when grouping moves out its last tab. A
+**Previous state** focus button reports that such a window is unavailable;
+**Grouped state** buttons focus the newly-created destination windows.
 
 ## Bookmark Structure
 
@@ -141,6 +148,8 @@ tab-bankruptcy/
 ├── grouping-report.test.js # Unit tests for report data
 ├── grouping-operation.js # Injected/testable browser-operation orchestration
 ├── grouping-operation.test.js # Mutation order, scope, and failure tests
+├── window-focus.js      # Validated report-to-window focus operation
+├── window-focus.test.js # Valid, invalid, and closed-window focus tests
 ├── report.html/js/css   # Temporary before/after grouping report
 ├── manifest-contract.test.js # Permissions and packaged report surface
 ├── styles.css            # Popup styling

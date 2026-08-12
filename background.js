@@ -5,7 +5,8 @@ importScripts(
   'url-validation.js',
   'domain-grouping.js',
   'grouping-report.js',
-  'grouping-operation.js'
+  'grouping-operation.js',
+  'window-focus.js'
 );
 
 // Listen for messages from popup
@@ -21,6 +22,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleGroupTabsByDomain(request.currentWindowOnly, request.currentWindowId)
       .then(result => sendResponse(result))
       .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
+  if (request.action === 'focusReportWindow') {
+    focusBrowserWindow(
+      request.windowId,
+      (windowId, updateInfo) => chrome.windows.update(windowId, updateInfo)
+    )
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({
+        success: false,
+        error: `Could not focus window: ${error.message}`
+      }));
     return true;
   }
 });

@@ -93,7 +93,12 @@ function renderWindows(containerId, windows) {
   for (const window of windows) {
     const card = element('article', 'window-card');
     const suffix = window.domain ? ` · Domain: ${window.domain}` : '';
-    card.append(element('h3', null, `Window ${window.windowNumber}${suffix}`));
+    const header = element('div', 'window-header');
+    header.append(
+      element('h3', null, `Window ${window.windowNumber}${suffix}`),
+      createFocusButton(window.windowId, window.windowNumber)
+    );
+    card.append(header);
     const list = element('ol', 'tab-list');
     for (const tab of window.tabs || []) {
       const item = element('li');
@@ -102,6 +107,37 @@ function renderWindows(containerId, windows) {
     }
     card.append(list);
     container.append(card);
+  }
+}
+
+function createFocusButton(windowId, windowNumber) {
+  const button = element('button', 'focus-window-button', 'Focus window');
+  button.type = 'button';
+  button.addEventListener('click', () => focusWindow(windowId, windowNumber, button));
+  return button;
+}
+
+async function focusWindow(windowId, windowNumber, button) {
+  const status = document.getElementById('reportStatus');
+  button.disabled = true;
+  status.className = 'report-status';
+  status.textContent = `Focusing Window ${windowNumber}…`;
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'focusReportWindow',
+      windowId
+    });
+    if (!response || !response.success) {
+      throw new Error(response && response.error ? response.error : 'Unknown extension error.');
+    }
+    status.textContent = `Focused Window ${windowNumber}.`;
+  } catch (error) {
+    status.className = 'report-status error-text';
+    status.textContent =
+      `Window ${windowNumber} is unavailable. It may have closed during grouping. ${error.message}`;
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -138,5 +174,11 @@ function showError(message) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { renderReport, renderSummary, renderDuplicates, renderWindows };
+  module.exports = {
+    renderReport,
+    renderSummary,
+    renderDuplicates,
+    renderWindows,
+    focusWindow
+  };
 }
