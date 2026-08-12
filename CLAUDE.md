@@ -51,12 +51,13 @@ packaging, and publishing remain separate explicit release operations.
    `{action: 'groupTabsByDomain', currentWindowOnly, currentWindowId}`
 3. Background snapshots every normal window; mutation scope is all windows or
    the invoking current window
-4. `planDomainGrouping()` groups HTTP(S) tabs by exact lowercase hostname,
-   including hostnames with only one tab; normalized exact-URL duplicates keep
-   their first occurrence and record every later occurrence for removal
+4. `planDomainGrouping()` groups HTTP(S) tabs by exact lowercase hostname, with
+   `github.com` specialized into lowercase owner/repository groups when two path
+   segments exist. Groups with only one tab are included; normalized exact-URL
+   duplicates keep their first occurrence and record every later occurrence
 5. `executeDomainGrouping()` in `grouping-operation.js` orchestrates injected,
    testable browser operations: remove later duplicates, create one unfocused
-   normal window per hostname, and move kept tabs there in discovery order
+   normal window per grouping key, and move kept tabs there in discovery order
 6. Background snapshots every normal window again, stores a one-shot report in
    `chrome.storage.local`, and opens `report.html`; the page consumes the data
 7. No bookmarks are created. Internal, local (`file://`), malformed, and
@@ -68,6 +69,9 @@ packaging, and publishing remain separate explicit release operations.
 - Exact-hostname grouping: every hostname becomes a window, even a singleton;
   subdomains remain separate; HTTP/HTTPS, path, query, and fragment differences
   do not split a hostname group
+- GitHub repository specialization: `github.com` URLs with at least two path
+  segments group by lowercase `github.com/<owner>/<repository>`; root and
+  single-segment pages remain in the general `github.com` group
 - Exact-URL deduplication uses normalized `new URL(url).href`; first occurrence
   wins, while query/fragment differences remain distinct
 - Preserves first-seen hostname order, tab discovery order, and original-window

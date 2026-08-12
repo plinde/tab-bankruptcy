@@ -78,7 +78,7 @@ document.getElementById('bankruptButton').addEventListener('click', async () => 
   }
 });
 
-// Group repeated HTTP(S) hostnames into dedicated windows for manual review.
+// Group HTTP(S) destinations into dedicated windows for manual review.
 document.getElementById('groupButton').addEventListener('click', async () => {
   const button = document.getElementById('groupButton');
   const bankruptButton = document.getElementById('bankruptButton');
@@ -98,7 +98,7 @@ document.getElementById('groupButton').addEventListener('click', async () => {
 
     if (response.success) {
       showStatus(
-        `Separated ${response.tabCount} tabs into ${response.domainCount} domain windows; ` +
+        `Separated ${response.tabCount} tabs into ${response.domainCount} group windows; ` +
         `removed ${response.duplicateCount} duplicates. Report opened.`
       );
       setTimeout(updateStats, 1000);

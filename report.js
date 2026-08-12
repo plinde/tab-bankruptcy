@@ -39,7 +39,7 @@ function renderReport(report) {
 
 function renderSummary(summary) {
   const values = [
-    ['Domains separated', summary.domainCount || 0],
+    ['Groups separated', summary.domainCount || 0],
     ['Tabs grouped', summary.groupedTabCount || 0],
     ['Duplicate URLs', summary.duplicateUrlCount || 0],
     ['Duplicate tabs removed', summary.duplicateTabCount || 0],
