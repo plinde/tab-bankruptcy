@@ -70,6 +70,40 @@ h2 {
   margin-top: 0;
 }
 
+.window-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.focus-window-button {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border: 1px solid #1967d2;
+  border-radius: 6px;
+  background: #1967d2;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.focus-window-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.report-status {
+  min-height: 1.5em;
+  margin-top: 12px;
+  color: #137333;
+  font-weight: 600;
+}
+
+.error-text {
+  color: #b31412;
+}
+
 .tab-list {
   margin-bottom: 0;
   padding-left: 28px;
@@ -123,5 +157,13 @@ h2 {
 
   .url {
     color: #8ab4f8;
+  }
+
+  .report-status {
+    color: #81c995;
+  }
+
+  .error-text {
+    color: #f28b82;
   }
 }

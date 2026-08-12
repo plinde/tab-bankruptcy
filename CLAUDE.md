@@ -81,6 +81,11 @@ packaging, and publishing remain separate explicit release operations.
   injects report content as HTML
 - Data is stored under a random `groupingReport:<uuid>` key and removed after
   the report first loads
+- Every before/after window card sends `focusReportWindow` with its snapshot
+  `windowId`; the worker validates it via `focusBrowserWindow()` and calls
+  `chrome.windows.update(id, { focused: true })`
+- A source window emptied by grouping may already be closed; the report keeps
+  working and shows an accessible unavailable-window error for that stale ID
 
 **Grouping Operation Tests** (`grouping-operation.test.js`):
 - Mock Chrome operations verify one window per singleton domain, dedupe-before-
