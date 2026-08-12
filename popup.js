@@ -37,11 +37,13 @@ function showStatus(message, isError = false) {
 // Handle bankruptcy button click
 document.getElementById('bankruptButton').addEventListener('click', async () => {
   const button = document.getElementById('bankruptButton');
+  const groupButton = document.getElementById('groupButton');
   const closeTabs = document.getElementById('closeTabs').checked;
   const currentWindowOnly = document.getElementById('currentWindowOnly').checked;
 
   // Disable button to prevent multiple clicks
   button.disabled = true;
+  groupButton.disabled = true;
   button.textContent = 'Processing...';
 
   try {
@@ -59,17 +61,51 @@ document.getElementById('bankruptButton').addEventListener('click', async () => 
       setTimeout(() => {
         updateStats();
         button.disabled = false;
+        groupButton.disabled = false;
         button.textContent = 'Declare Bankruptcy';
       }, 1000);
     } else {
       showStatus(`Error: ${response.error}`, true);
       button.disabled = false;
+      groupButton.disabled = false;
       button.textContent = 'Declare Bankruptcy';
     }
   } catch (error) {
     showStatus(`Error: ${error.message}`, true);
     button.disabled = false;
+    groupButton.disabled = false;
     button.textContent = 'Declare Bankruptcy';
+  }
+});
+
+// Group repeated HTTP(S) hostnames into dedicated windows for manual review.
+document.getElementById('groupButton').addEventListener('click', async () => {
+  const button = document.getElementById('groupButton');
+  const bankruptButton = document.getElementById('bankruptButton');
+  const currentWindowOnly = document.getElementById('currentWindowOnly').checked;
+
+  button.disabled = true;
+  bankruptButton.disabled = true;
+  button.textContent = 'Grouping...';
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'groupTabsByDomain',
+      currentWindowOnly: currentWindowOnly
+    });
+
+    if (response.success) {
+      showStatus(`Grouped ${response.tabCount} tabs into ${response.domainCount} domain windows.`);
+      setTimeout(updateStats, 1000);
+    } else {
+      showStatus(`Error: ${response.error}`, true);
+    }
+  } catch (error) {
+    showStatus(`Error: ${error.message}`, true);
+  } finally {
+    button.disabled = false;
+    bankruptButton.disabled = false;
+    button.textContent = 'Group Tabs by Domain';
   }
 });
 

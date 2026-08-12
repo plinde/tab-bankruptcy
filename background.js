@@ -1,5 +1,5 @@
 // Shared pure helpers (also unit-tested in Node)
-importScripts('bookmarks-bar.js', 'bankruptcy-plan.js');
+importScripts('bookmarks-bar.js', 'bankruptcy-plan.js', 'domain-grouping.js');
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -9,7 +9,68 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true; // Keep message channel open for async response
   }
+
+  if (request.action === 'groupTabsByDomain') {
+    handleGroupTabsByDomain(request.currentWindowOnly)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
 });
+
+// Consolidate repeated HTTP(S) hostnames into dedicated windows. This action
+// intentionally does not bookmark, close, or deduplicate tabs: it creates a
+// review-friendly layout for the user to thin manually.
+async function handleGroupTabsByDomain(currentWindowOnly) {
+  try {
+    let windows;
+    if (currentWindowOnly) {
+      windows = [await chrome.windows.getCurrent({ populate: true })];
+    } else {
+      windows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
+    }
+
+    const windowTabLists = [];
+    for (const window of windows) {
+      windowTabLists.push(await chrome.tabs.query({ windowId: window.id }));
+    }
+
+    const groups = planDomainGroups(windowTabLists);
+    if (groups.length === 0) {
+      return {
+        success: false,
+        error: 'No domains with two or more groupable tabs found.'
+      };
+    }
+
+    let tabsGrouped = 0;
+    for (const group of groups) {
+      const [firstTab, ...remainingTabs] = group.tabs;
+      const groupedWindow = await chrome.windows.create({
+        tabId: firstTab.id,
+        focused: false,
+        type: 'normal'
+      });
+
+      if (remainingTabs.length > 0) {
+        await chrome.tabs.move(
+          remainingTabs.map(tab => tab.id),
+          { windowId: groupedWindow.id, index: -1 }
+        );
+      }
+      tabsGrouped += group.tabs.length;
+    }
+
+    return {
+      success: true,
+      domainCount: groups.length,
+      tabCount: tabsGrouped
+    };
+  } catch (error) {
+    console.error('Domain grouping error:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 // Get or create the top-level 'tab-bankruptcy' folder
 async function getOrCreateTopLevelFolder() {
