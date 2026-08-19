@@ -47,13 +47,13 @@ function harness(beforeWindows, afterWindows = []) {
 
 test('separates every singleton domain into its own window and reports all state', async () => {
   const before = [window(1, 101, [
-    tab(1, 'file:///tmp/local.html'),
+    tab(1, 'about:blank'),
     tab(2, 'https://app.example/login'),
     tab(3, 'https://dashboard.stripe.com/'),
     tab(4, 'https://us-east-1.signin.aws.amazon.com/'),
   ])];
   const after = [
-    window(1, 101, [tab(1, 'file:///tmp/local.html')]),
+    window(1, 101, [tab(1, 'about:blank')]),
     { ...window(2, 900, [before[0].tabs[1]]), domain: 'app.example' },
     { ...window(3, 901, [before[0].tabs[2]]), domain: 'dashboard.stripe.com' },
     { ...window(4, 902, [before[0].tabs[3]]), domain: 'us-east-1.signin.aws.amazon.com' },
@@ -82,6 +82,31 @@ test('separates every singleton domain into its own window and reports all state
   assert.equal(saved[2].beforeWindows, before);
   assert.equal(saved[2].afterWindows, after);
   assert.deepEqual(calls.at(-1), ['open', 'fixed-report-id']);
+});
+
+test('groups file and Chrome internal tabs into one window per scheme', async () => {
+  const before = [window(1, 101, [
+    tab(1, 'file:///tmp/one.html'),
+    tab(2, 'file:///tmp/two.html'),
+    tab(3, 'chrome://extensions'),
+    tab(4, 'chrome://settings/privacy'),
+  ])];
+  const { calls, dependencies } = harness(before, []);
+
+  const result = await executeDomainGrouping(
+    { currentWindowOnly: false, currentWindowId: null },
+    dependencies
+  );
+
+  assert.equal(result.domainCount, 2);
+  assert.deepEqual(calls.filter(call => call[0] === 'create').map(call => call.slice(1, 3)), [
+    [1, 'file://'],
+    [3, 'chrome://'],
+  ]);
+  assert.deepEqual(calls.filter(call => call[0] === 'move'), [
+    ['move', 2, 900],
+    ['move', 4, 901],
+  ]);
 });
 
 test('removes later exact duplicates before creating/moving domain windows', async () => {
@@ -147,7 +172,7 @@ test('incognito windows remain outside grouping and deduplication', async () => 
 
 test('no eligible tabs causes no mutation, second snapshot, or report', async () => {
   const { calls, dependencies } = harness([
-    window(1, 101, [tab(1, 'file:///tmp/local.html'), tab(2, 'chrome://settings')]),
+    window(1, 101, [tab(1, 'about:blank'), tab(2, 'ftp://example.com/file')]),
   ]);
 
   const result = await executeDomainGrouping(
@@ -155,7 +180,10 @@ test('no eligible tabs causes no mutation, second snapshot, or report', async ()
     dependencies
   );
 
-  assert.deepEqual(result, { success: false, error: 'No groupable HTTP(S) tabs found.' });
+  assert.deepEqual(result, {
+    success: false,
+    error: 'No groupable web, file, or Chrome tabs found.',
+  });
   assert.deepEqual(calls, [['capture', null]]);
 });
 

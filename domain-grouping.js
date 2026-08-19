@@ -1,4 +1,4 @@
-// Plan HTTP(S) destination groups and exact-URL deduplication without chrome.*.
+// Plan destination groups and exact-URL deduplication without chrome.*.
 //
 // `windows` is an ordered snapshot of { windowNumber, windowId, tabs }. The
 // first occurrence of a normalized URL is kept; later occurrences are recorded
@@ -23,8 +23,6 @@ function planDomainGrouping(windows, options = {}) {
       } catch (error) {
         continue;
       }
-
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') continue;
 
       const domain = groupingDomain(parsed, options.byGithubRepo === true);
       if (!domain) continue;
@@ -67,6 +65,10 @@ function planDomainGrouping(windows, options = {}) {
 }
 
 function groupingDomain(parsed, byGithubRepo = false) {
+  if (parsed.protocol === 'file:') return 'file://';
+  if (parsed.protocol === 'chrome:') return 'chrome://';
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+
   const hostname = parsed.hostname.toLowerCase();
   if (hostname !== 'github.com' || !byGithubRepo) return hostname;
 

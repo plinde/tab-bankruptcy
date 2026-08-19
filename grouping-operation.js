@@ -26,7 +26,7 @@ async function executeDomainGrouping(options, dependencies) {
   });
 
   if (plan.groups.length === 0) {
-    return { success: false, error: 'No groupable HTTP(S) tabs found.' };
+    return { success: false, error: 'No groupable web, file, or Chrome tabs found.' };
   }
 
   const duplicateTabIds = plan.duplicates.flatMap(duplicate =>

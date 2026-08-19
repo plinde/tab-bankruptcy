@@ -62,18 +62,19 @@ packaging, and publishing remain separate explicit release operations.
    byGithubRepo}`
 3. Background snapshots every normal window; mutation scope is all windows or
    the invoking current window
-4. `planDomainGrouping()` groups HTTP(S) tabs by exact lowercase hostname. When
+4. `planDomainGrouping()` groups HTTP(S) tabs by exact lowercase hostname, all
+   `file://` tabs under one key, and all `chrome://` tabs under another. When
    `byGithubRepo` is enabled, `github.com` is specialized into lowercase
-   owner/repository groups when two path segments exist. Groups with only one
-   tab are included; normalized exact-URL duplicates keep their first occurrence
-   and record every later occurrence
+   owner/repository groups when two path segments exist. Groups with only one tab
+   are included; normalized exact-URL duplicates keep their first occurrence and
+   record every later occurrence
 5. `executeDomainGrouping()` in `grouping-operation.js` orchestrates injected,
    testable browser operations: remove later duplicates, create one unfocused
    normal window per grouping key, and move kept tabs there in discovery order
 6. Background snapshots every normal window again, stores a one-shot report in
    `chrome.storage.local`, and opens `report.html`; the page consumes the data
-7. No bookmarks are created. Internal, local (`file://`), malformed, and
-   non-HTTP(S) tabs remain in their original windows
+7. No bookmarks are created. Malformed and unsupported-scheme tabs remain in
+   their original windows
 
 **Domain Grouping Planner** (`planDomainGrouping()` in `domain-grouping.js`):
 - Pure function (no `chrome.*`) shared with the service worker via `importScripts`
@@ -81,6 +82,8 @@ packaging, and publishing remain separate explicit release operations.
 - Exact-hostname grouping: every hostname becomes a window, even a singleton;
   subdomains remain separate; HTTP/HTTPS, path, query, and fragment differences
   do not split a hostname group
+- Prefix grouping: all `file://` tabs share one group and all `chrome://` tabs
+  share another, regardless of path or internal page
 - Optional GitHub repository specialization: when selected, `github.com` URLs
   with at least two path segments group by lowercase
   `github.com/<owner>/<repository>`; otherwise every GitHub URL stays in the

@@ -10,14 +10,16 @@ Declare tab bankruptcy and save all your open tabs to bookmarks before starting 
   - Close tabs after saving (or keep them open)
   - Save only current window or all windows
 - **Separate Every Domain**: Moves every HTTP(S) hostname into its own dedicated
-  browser window—even when that hostname has only one tab. An optional setting
-  splits `github.com` tabs further by owner/repository slug
+  browser window—even when that hostname has only one tab—and consolidates all
+  `file://` tabs and all `chrome://` tabs into one window per scheme. An optional
+  setting splits `github.com` tabs further by owner/repository slug. Cross-window
+  grouping leaves incognito windows untouched
 - **Grouping Audit Report**: Opens a temporary before/after report containing
   every normal window, tab title, URL, and exact-duplicate provenance
 - **Window Links**: Every report card can focus its corresponding live browser
   window directly—no Cmd+Tab hunting
-- **Smart Filtering**: Skips invalid URLs (chrome://, edge://, etc.); windows left
-  with no bookmarkable tabs are skipped entirely (no empty `Window N` folders)
+- **Smart Bookmark Filtering**: Skips unbookmarkable URLs (chrome://, edge://,
+  etc.); windows left with no bookmarkable tabs are skipped entirely
 - **Safe Cleanup**: Ensures at least one tab remains open to prevent closing the browser
 - **Profile-aware**: Works on any Chrome profile — signed-in profiles with account
   (synced) bookmarks, local-only profiles, or both (saves to the synced bar when both exist)
@@ -78,23 +80,26 @@ Create a simple icon or use a placeholder until you have proper icons.
 2. Optionally select **Split GitHub tabs by repository**. It is off by default
 3. Click **Group Tabs by Domain**
 4. Every exact HTTP(S) hostname is moved into its own dedicated window, including
-   hostnames represented by only one tab. When GitHub repository splitting is
-   selected, each owner/repository slug gets a separate window
+   hostnames represented by only one tab. All `file://` tabs share one window and
+   all `chrome://` tabs share another. When GitHub repository splitting is
+   selected, each owner/repository slug gets a separate window. Incognito windows
+   remain untouched
 5. Exact duplicate URLs are reduced to their first occurrence
 6. A temporary report opens with complete before/after window state and the
    original windows for every kept and removed duplicate
 7. Click **Focus window** on any report card to jump to that live window
 
-Grouping accepts HTTP and HTTPS tabs and matches exact hostnames case-insensitively.
-Paths, query strings, fragments, and HTTP versus HTTPS do not split a domain
-group. When **Split GitHub tabs by repository** is selected, GitHub URLs with an
+Grouping accepts HTTP, HTTPS, `file://`, and `chrome://` tabs. HTTP(S) hostnames
+match case-insensitively; paths, query strings, fragments, and HTTP versus HTTPS
+do not split a domain group. Every file URL uses the `file://` group and every
+Chrome internal URL uses the `chrome://` group. When **Split GitHub tabs by
+repository** is selected, GitHub URLs with an
 owner and repository path are grouped case-insensitively by their first two path segments, so
 `github.com/octo-org/octo-repo/issues/1` and `github.com/Octo-Org/Octo-Repo/pull/2` share
 one window. A different repository gets a different window. GitHub root and
 single-segment pages stay in the general `github.com` window. Subdomains remain
 separate, so `gist.github.com` is unaffected. A domain with one tab still gets
-its own window. Internal pages, `file://` URLs, malformed URLs, and other schemes
-stay where they are.
+its own window. Malformed URLs and other schemes stay where they are.
 
 Duplicate identity is normalized exact URL equality. The first occurrence in
 original window/tab order is kept; later exact copies are closed. Query-string

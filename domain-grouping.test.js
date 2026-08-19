@@ -5,22 +5,33 @@ const { planDomainGrouping } = require('./domain-grouping.js');
 const tab = (url, id, title = url) => ({ url, id, title });
 const window = (windowNumber, windowId, tabs) => ({ windowNumber, windowId, tabs });
 
-test('groups every HTTP(S) hostname, including singletons, in first-seen order', () => {
+test('groups HTTP(S) hosts plus file:// and chrome:// prefixes in first-seen order', () => {
   const plan = planDomainGrouping([
     window(1, 101, [
       tab('file:///tmp/report.html', 1),
       tab('https://app.example/one', 2),
       tab('https://dashboard.stripe.com/', 3),
       tab('https://us-east-1.signin.aws.amazon.com/', 4),
+      tab('file:///Users/example/notes.txt', 5),
+      tab('chrome://extensions', 6),
+      tab('chrome://settings/privacy', 7),
     ]),
   ]);
 
   assert.deepEqual(plan.groups.map(group => group.domain), [
+    'file://',
     'app.example',
     'dashboard.stripe.com',
     'us-east-1.signin.aws.amazon.com',
+    'chrome://',
   ]);
-  assert.deepEqual(plan.groups.map(group => group.tabs.map(item => item.id)), [[2], [3], [4]]);
+  assert.deepEqual(plan.groups.map(group => group.tabs.map(item => item.id)), [
+    [1, 5],
+    [2],
+    [3],
+    [4],
+    [6, 7],
+  ]);
 });
 
 test('deduplicates normalized exact URLs and records original-window provenance', () => {
@@ -115,11 +126,9 @@ test('keeps all github.com tabs together by default', () => {
   assert.deepEqual(plan.groups[0].tabs.map(item => item.id), [1, 2, 3]);
 });
 
-test('ignores local, internal, non-HTTP, malformed, and missing URLs', () => {
+test('ignores unsupported schemes, malformed URLs, and missing URLs', () => {
   const plan = planDomainGrouping([
     window(1, 101, [
-      tab('chrome://extensions', 1),
-      tab('file:///tmp/file', 2),
       tab('ftp://example.com/file', 3),
       tab('not a URL', 4),
       { id: 5 },
