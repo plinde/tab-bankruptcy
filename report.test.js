@@ -94,6 +94,25 @@ test('renders report content as text and exposes before/after/duplicate provenan
   delete require.cache[require.resolve('./report.js')];
 });
 
+test('renders a scheme-neutral empty duplicate message', () => {
+  const ids = installDocument();
+  const { renderReport } = require('./report.js');
+
+  renderReport({
+    createdAt: '2026-08-11T12:00:00.000Z',
+    scope: 'all-windows',
+    summary: { domainCount: 0, groupedTabCount: 0, duplicateTabCount: 0 },
+    duplicates: [],
+    beforeWindows: [],
+    afterWindows: [],
+  });
+
+  assert.equal(ids.get('duplicates').children[0].textContent, 'No exact duplicate URLs found.');
+
+  delete global.document;
+  delete require.cache[require.resolve('./report.js')];
+});
+
 test('focus control reports success and closed-window errors accessibly', async () => {
   const ids = installDocument();
   const { focusWindow } = require('./report.js');

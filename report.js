@@ -58,7 +58,7 @@ function renderSummary(summary) {
 function renderDuplicates(duplicates) {
   const container = document.getElementById('duplicates');
   if (duplicates.length === 0) {
-    container.append(element('p', 'empty', 'No exact duplicate HTTP(S) URLs found.'));
+    container.append(element('p', 'empty', 'No exact duplicate URLs found.'));
     return;
   }
 
