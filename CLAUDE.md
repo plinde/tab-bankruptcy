@@ -116,6 +116,8 @@ packaging, and publishing remain separate explicit release operations.
   window, and otherwise creates a dedicated catch-all window from the first
   singleton. Mixed-purpose windows are never selected heuristically. The target
   is remembered for subsequent runs
+- Cross-window grouping and consolidation leave incognito windows untouched to
+  avoid invalid regular/incognito tab moves; in-window sorting remains safe
 - Sorts tabs by title, URL, or URL then title inside each existing window without
   moving tabs between windows; pinned tabs and tab groups remain in their
   existing sections

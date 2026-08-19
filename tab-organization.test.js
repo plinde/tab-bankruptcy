@@ -209,6 +209,29 @@ test('singleton combination reports an unchanged run as success', async () => {
   });
 });
 
+test('singleton combination leaves incognito windows untouched', async () => {
+  const calls = [];
+  const result = await executeSingletonCombination('all', {
+    async captureNormalWindows() {
+      return [
+        window(101, [tab(1, 'https://example.com/regular')]),
+        { ...window(202, [tab(2, 'https://example.net/incognito')]), incognito: true },
+      ];
+    },
+    async moveTab(tabId, windowId) {
+      calls.push([tabId, windowId]);
+    },
+  });
+
+  assert.deepEqual(calls, []);
+  assert.deepEqual(result, {
+    success: true,
+    tabCount: 0,
+    windowCount: 0,
+    targetWindowId: null,
+  });
+});
+
 test('GitHub combination persists the selected target window', async () => {
   const savedTargets = [];
   const result = await executeSingletonCombination('github', {

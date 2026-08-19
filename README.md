@@ -10,8 +10,8 @@ Declare tab bankruptcy and save all your open tabs to bookmarks before starting 
   - Close tabs after saving (or keep them open)
   - Save only current window or all windows
 - **Separate Every Domain**: Moves every HTTP(S) hostname into its own dedicated
-  browser window—even when that hostname has only one tab. `github.com` tabs are
-  split further into one window per owner/repository slug
+  browser window—even when that hostname has only one tab. An optional setting
+  splits `github.com` tabs further by owner/repository slug
 - **Grouping Audit Report**: Opens a temporary before/after report containing
   every normal window, tab title, URL, and exact-duplicate provenance
 - **Window Links**: Every report card can focus its corresponding live browser
@@ -112,7 +112,7 @@ Bookmarks are organized as follows:
 Bookmarks Bar/
 └── tab-bankruptcy-2025-10-05T10-30-00/
     ├── Window 1/
-    │   ├── GitHub - example-org/example-repo
+    │   ├── GitHub - octo-org/octo-repo
     │   ├── Google Search - Chrome Extensions
     │   └── ...
     ├── Window 2/

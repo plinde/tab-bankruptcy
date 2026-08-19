@@ -1,4 +1,4 @@
-// Plan and execute tab organization that does not create new browser windows.
+// Plan and execute singleton consolidation and in-window tab ordering.
 
 function planSingletonCombination(windows, mode = 'all', preferredTargetWindowId = null) {
   const candidates = (windows || []).filter(window =>
@@ -83,7 +83,7 @@ function parseHttpUrl(url) {
 }
 
 async function executeSingletonCombination(mode, dependencies) {
-  const windows = await dependencies.captureNormalWindows();
+  const windows = (await dependencies.captureNormalWindows()).filter(window => !window.incognito);
   const preferredTargetWindowId = mode === 'github' && dependencies.getPreferredTargetWindowId
     ? await dependencies.getPreferredTargetWindowId()
     : null;

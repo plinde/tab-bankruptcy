@@ -17,8 +17,10 @@ async function executeDomainGrouping(options, dependencies) {
 
   const beforeWindows = await captureNormalWindows();
   const scopedWindows = options.currentWindowOnly
-    ? beforeWindows.filter(window => window.windowId === options.currentWindowId)
-    : beforeWindows;
+    ? beforeWindows.filter(window =>
+      !window.incognito && window.windowId === options.currentWindowId
+    )
+    : beforeWindows.filter(window => !window.incognito);
   const plan = planDomainGrouping(scopedWindows, {
     byGithubRepo: options.byGithubRepo === true
   });

@@ -127,6 +127,24 @@ test('current-window scope leaves other windows out of grouping and dedupe', asy
   assert.equal(calls.find(call => call[0] === 'save')[2].scope, 'current-window');
 });
 
+test('incognito windows remain outside grouping and deduplication', async () => {
+  const before = [
+    window(1, 101, [tab(1, 'https://example.com/same')]),
+    { ...window(2, 202, [tab(2, 'https://example.com/same')]), incognito: true },
+  ];
+  const { calls, dependencies } = harness(before, []);
+
+  const result = await executeDomainGrouping(
+    { currentWindowOnly: false, currentWindowId: null },
+    dependencies
+  );
+
+  assert.equal(result.domainCount, 1);
+  assert.equal(result.duplicateCount, 0);
+  assert.equal(calls.some(call => call[0] === 'remove'), false);
+  assert.deepEqual(calls.find(call => call[0] === 'create').slice(1, 3), [1, 'example.com']);
+});
+
 test('no eligible tabs causes no mutation, second snapshot, or report', async () => {
   const { calls, dependencies } = harness([
     window(1, 101, [tab(1, 'file:///tmp/local.html'), tab(2, 'chrome://settings')]),

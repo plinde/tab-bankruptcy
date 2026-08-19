@@ -155,6 +155,7 @@ async function captureNormalWindows(domainByWindowId = new Map()) {
     snapshot.push({
       windowNumber: index + 1,
       windowId: window.id,
+      incognito: window.incognito === true,
       domain: domainByWindowId.get(window.id) || null,
       tabs: tabs.map(tab => ({
         id: tab.id,
