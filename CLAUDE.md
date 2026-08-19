@@ -24,6 +24,16 @@ npm test   # node --test — covers bookmarks-bar, profile-disclosure, bankruptc
 
 Run the complete local gate with `npm run validate`.
 
+## GitHub Test Fixtures
+
+Any GitHub repository fixture, example URL, grouping key, or documentation
+placeholder must use one of these GitHub-documented examples:
+
+- `github.com/octo-org/octo-repo`
+- `github.com/monalisa/octo-repo`
+
+Do not use real users, organizations, or repositories in fixtures or examples.
+
 ## Versioning workflow
 
 Every merged change increments `manifest.json` and `package.json` together.
@@ -48,13 +58,15 @@ packaging, and publishing remain separate explicit release operations.
 **Domain Separation Flow**:
 1. User clicks "Group Tabs by Domain" in popup
 2. Popup resolves its current window and sends
-   `{action: 'groupTabsByDomain', currentWindowOnly, currentWindowId}`
+   `{action: 'groupTabsByDomain', currentWindowOnly, currentWindowId,
+   byGithubRepo}`
 3. Background snapshots every normal window; mutation scope is all windows or
    the invoking current window
-4. `planDomainGrouping()` groups HTTP(S) tabs by exact lowercase hostname, with
-   `github.com` specialized into lowercase owner/repository groups when two path
-   segments exist. Groups with only one tab are included; normalized exact-URL
-   duplicates keep their first occurrence and record every later occurrence
+4. `planDomainGrouping()` groups HTTP(S) tabs by exact lowercase hostname. When
+   `byGithubRepo` is enabled, `github.com` is specialized into lowercase
+   owner/repository groups when two path segments exist. Groups with only one
+   tab are included; normalized exact-URL duplicates keep their first occurrence
+   and record every later occurrence
 5. `executeDomainGrouping()` in `grouping-operation.js` orchestrates injected,
    testable browser operations: remove later duplicates, create one unfocused
    normal window per grouping key, and move kept tabs there in discovery order
@@ -69,9 +81,10 @@ packaging, and publishing remain separate explicit release operations.
 - Exact-hostname grouping: every hostname becomes a window, even a singleton;
   subdomains remain separate; HTTP/HTTPS, path, query, and fragment differences
   do not split a hostname group
-- GitHub repository specialization: `github.com` URLs with at least two path
-  segments group by lowercase `github.com/<owner>/<repository>`; root and
-  single-segment pages remain in the general `github.com` group
+- Optional GitHub repository specialization: when selected, `github.com` URLs
+  with at least two path segments group by lowercase
+  `github.com/<owner>/<repository>`; otherwise every GitHub URL stays in the
+  general `github.com` group
 - Exact-URL deduplication uses normalized `new URL(url).href`; first occurrence
   wins, while query/fragment differences remain distinct
 - Preserves first-seen hostname order, tab discovery order, and original-window
@@ -95,6 +108,19 @@ packaging, and publishing remain separate explicit release operations.
 - Mock Chrome operations verify one window per singleton domain, dedupe-before-
   move ordering, current-window scope, before/after report lifecycle, no-op
   safety, mutation failure propagation, and cleanup after report-open failure
+
+**Tab Organization** (`tab-organization.js`):
+- Combines every one-tab window into the first singleton, or moves every
+  singleton tab into a remembered target window. Initial target selection
+  prefers a dedicated general GitHub window, then the largest dedicated GitHub
+  window, and otherwise creates a dedicated catch-all window from the first
+  singleton. Mixed-purpose windows are never selected heuristically. The target
+  is remembered for subsequent runs
+- Sorts tabs by title, URL, or URL then title inside each existing window without
+  moving tabs between windows; pinned tabs and tab groups remain in their
+  existing sections
+- Pure planners and injected browser operations are unit-tested in
+  `tab-organization.test.js`
 
 **Profile Scope Disclosure** (`updateProfileDisclosure()` in popup.js):
 - The popup shows `Running as: <account-email>` for the current profile, plus a

@@ -19,7 +19,9 @@ async function executeDomainGrouping(options, dependencies) {
   const scopedWindows = options.currentWindowOnly
     ? beforeWindows.filter(window => window.windowId === options.currentWindowId)
     : beforeWindows;
-  const plan = planDomainGrouping(scopedWindows);
+  const plan = planDomainGrouping(scopedWindows, {
+    byGithubRepo: options.byGithubRepo === true
+  });
 
   if (plan.groups.length === 0) {
     return { success: false, error: 'No groupable HTTP(S) tabs found.' };

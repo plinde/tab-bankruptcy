@@ -87,21 +87,21 @@ test('separates every singleton domain into its own window and reports all state
 test('removes later exact duplicates before creating/moving domain windows', async () => {
   const before = [
     window(1, 101, [
-      tab(1, 'https://github.com/org/repo/issues/1', 'kept'),
-      tab(2, 'https://github.com/org/repo/pull/2'),
+      tab(1, 'https://github.com/octo-org/octo-repo/issues/1', 'kept'),
+      tab(2, 'https://github.com/octo-org/octo-repo/pull/2'),
     ]),
-    window(2, 202, [tab(3, 'https://github.com/org/repo/issues/1', 'removed')]),
+    window(2, 202, [tab(3, 'https://github.com/octo-org/octo-repo/issues/1', 'removed')]),
   ];
   const { calls, dependencies } = harness(before, []);
 
   const result = await executeDomainGrouping(
-    { currentWindowOnly: false, currentWindowId: null },
+    { currentWindowOnly: false, currentWindowId: null, byGithubRepo: true },
     dependencies
   );
 
   assert.equal(result.duplicateCount, 1);
   assert.deepEqual(calls[1], ['remove', [3]]);
-  assert.deepEqual(calls[2].slice(0, 3), ['create', 1, 'github.com/org/repo']);
+  assert.deepEqual(calls[2].slice(0, 3), ['create', 1, 'github.com/octo-org/octo-repo']);
   assert.deepEqual(calls[3], ['move', 2, 900]);
   const report = calls.find(call => call[0] === 'save')[2];
   assert.equal(report.duplicates[0].kept.windowNumber, 1);

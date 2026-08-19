@@ -4,8 +4,8 @@
 // first occurrence of a normalized URL is kept; later occurrences are recorded
 // for removal with their original window provenance. Every hostname is
 // actionable, including a hostname represented by one unique tab. GitHub.com
-// tabs are specialized into owner/repository groups when the URL has a slug.
-function planDomainGrouping(windows) {
+// tabs can optionally be specialized into owner/repository groups.
+function planDomainGrouping(windows, options = {}) {
   const groupsByDomain = new Map();
   const firstByUrl = new Map();
   const duplicatesByUrl = new Map();
@@ -26,7 +26,7 @@ function planDomainGrouping(windows) {
 
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') continue;
 
-      const domain = groupingDomain(parsed);
+      const domain = groupingDomain(parsed, options.byGithubRepo === true);
       if (!domain) continue;
 
       const normalizedUrl = parsed.href;
@@ -66,9 +66,9 @@ function planDomainGrouping(windows) {
   };
 }
 
-function groupingDomain(parsed) {
+function groupingDomain(parsed, byGithubRepo = false) {
   const hostname = parsed.hostname.toLowerCase();
-  if (hostname !== 'github.com') return hostname;
+  if (hostname !== 'github.com' || !byGithubRepo) return hostname;
 
   const pathSegments = parsed.pathname.split('/').filter(Boolean);
   if (pathSegments.length < 2) return hostname;

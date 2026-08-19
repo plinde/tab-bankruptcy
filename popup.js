@@ -34,16 +34,20 @@ function showStatus(message, isError = false) {
   statusDiv.style.display = 'block';
 }
 
+function setActionButtonsDisabled(disabled) {
+  for (const id of ['bankruptButton', 'groupButton', 'combineButton', 'sortButton']) {
+    document.getElementById(id).disabled = disabled;
+  }
+}
+
 // Handle bankruptcy button click
 document.getElementById('bankruptButton').addEventListener('click', async () => {
   const button = document.getElementById('bankruptButton');
-  const groupButton = document.getElementById('groupButton');
   const closeTabs = document.getElementById('closeTabs').checked;
   const currentWindowOnly = document.getElementById('currentWindowOnly').checked;
 
   // Disable button to prevent multiple clicks
-  button.disabled = true;
-  groupButton.disabled = true;
+  setActionButtonsDisabled(true);
   button.textContent = 'Processing...';
 
   try {
@@ -60,20 +64,17 @@ document.getElementById('bankruptButton').addEventListener('click', async () => 
       // Update stats after a short delay
       setTimeout(() => {
         updateStats();
-        button.disabled = false;
-        groupButton.disabled = false;
+        setActionButtonsDisabled(false);
         button.textContent = 'Declare Bankruptcy';
       }, 1000);
     } else {
       showStatus(`Error: ${response.error}`, true);
-      button.disabled = false;
-      groupButton.disabled = false;
+      setActionButtonsDisabled(false);
       button.textContent = 'Declare Bankruptcy';
     }
   } catch (error) {
     showStatus(`Error: ${error.message}`, true);
-    button.disabled = false;
-    groupButton.disabled = false;
+    setActionButtonsDisabled(false);
     button.textContent = 'Declare Bankruptcy';
   }
 });
@@ -81,11 +82,10 @@ document.getElementById('bankruptButton').addEventListener('click', async () => 
 // Group HTTP(S) destinations into dedicated windows for manual review.
 document.getElementById('groupButton').addEventListener('click', async () => {
   const button = document.getElementById('groupButton');
-  const bankruptButton = document.getElementById('bankruptButton');
   const currentWindowOnly = document.getElementById('currentWindowOnly').checked;
+  const byGithubRepo = document.getElementById('byGithubRepo').checked;
 
-  button.disabled = true;
-  bankruptButton.disabled = true;
+  setActionButtonsDisabled(true);
   button.textContent = 'Grouping...';
 
   try {
@@ -93,7 +93,8 @@ document.getElementById('groupButton').addEventListener('click', async () => {
     const response = await chrome.runtime.sendMessage({
       action: 'groupTabsByDomain',
       currentWindowOnly: currentWindowOnly,
-      currentWindowId: currentWindow ? currentWindow.id : null
+      currentWindowId: currentWindow ? currentWindow.id : null,
+      byGithubRepo: byGithubRepo
     });
 
     if (response.success) {
@@ -108,9 +109,66 @@ document.getElementById('groupButton').addEventListener('click', async () => {
   } catch (error) {
     showStatus(`Error: ${error.message}`, true);
   } finally {
-    button.disabled = false;
-    bankruptButton.disabled = false;
+    setActionButtonsDisabled(false);
     button.textContent = 'Group Tabs by Domain';
+  }
+});
+
+document.getElementById('combineButton').addEventListener('click', async () => {
+  const button = document.getElementById('combineButton');
+  const mode = document.getElementById('combineMode').value;
+  setActionButtonsDisabled(true);
+  button.textContent = 'Combining...';
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'combineSingleTabWindows',
+      mode
+    });
+    if (response.success) {
+      const message = response.windowCount === 0
+        ? 'No matching single-tab windows needed combining.'
+        : `Combined ${response.tabCount} tabs from ${response.windowCount} windows.`;
+      showStatus(message);
+      setTimeout(updateStats, 1000);
+    } else {
+      showStatus(`Error: ${response.error}`, true);
+    }
+  } catch (error) {
+    showStatus(`Error: ${error.message}`, true);
+  } finally {
+    setActionButtonsDisabled(false);
+    button.textContent = 'Combine Windows';
+  }
+});
+
+document.getElementById('sortButton').addEventListener('click', async () => {
+  const button = document.getElementById('sortButton');
+  const currentWindowOnly = document.getElementById('currentWindowOnly').checked;
+  const sortBy = document.getElementById('sortBy').value;
+  setActionButtonsDisabled(true);
+  button.textContent = 'Sorting...';
+
+  try {
+    const currentWindow = currentWindowOnly ? await chrome.windows.getCurrent() : null;
+    const response = await chrome.runtime.sendMessage({
+      action: 'sortTabsInWindows',
+      currentWindowOnly,
+      currentWindowId: currentWindow ? currentWindow.id : null,
+      sortBy
+    });
+    if (response.success) {
+      showStatus(
+        `Sorted ${response.tabCount} tabs across ${response.windowCount} changed windows.`
+      );
+    } else {
+      showStatus(`Error: ${response.error}`, true);
+    }
+  } catch (error) {
+    showStatus(`Error: ${error.message}`, true);
+  } finally {
+    setActionButtonsDisabled(false);
+    button.textContent = 'Sort Existing Windows';
   }
 });
 

@@ -7,14 +7,15 @@ tabs belong to unrelated repositories.
 
 ## Goal
 
-During **Group Tabs by Domain**, group `github.com` URLs with at least two path
-segments by their owner/repository slug. For example, all pages below belong to
-the `github.com/elastic/kibana` group:
+When **Split GitHub tabs by repository** is selected during **Group Tabs by
+Domain**, group `github.com` URLs with at least two path segments by their
+owner/repository slug. The option is off by default. For example, all pages
+below belong to the `github.com/octo-org/octo-repo` group:
 
 ```text
-https://github.com/elastic/kibana
-https://github.com/elastic/kibana/issues/1
-https://github.com/elastic/kibana/pull/2
+https://github.com/octo-org/octo-repo
+https://github.com/octo-org/octo-repo/issues/1
+https://github.com/octo-org/octo-repo/pull/2
 ```
 
 Owner and repository matching is case-insensitive. Each unique normalized
@@ -34,6 +35,8 @@ and tab order remain unchanged.
 ## Acceptance criteria
 
 - Different GitHub repositories produce different groups and windows.
+- With repository splitting disabled, all `github.com` URLs use the general
+  `github.com` group.
 - Different pages within one GitHub repository produce one group and window.
 - Owner and repository case differences do not split a group.
 - Root and single-segment GitHub URLs use the general `github.com` group.

@@ -4,10 +4,17 @@ importScripts(
   'bankruptcy-plan.js',
   'url-validation.js',
   'domain-grouping.js',
+  'tab-organization.js',
   'grouping-report.js',
   'grouping-operation.js',
   'window-focus.js'
 );
+
+const SINGLETON_TARGET_KEY = 'tabOrganization:singletonTargetWindowId:v2';
+
+chrome.runtime.onStartup.addListener(() => {
+  chrome.storage.local.remove(SINGLETON_TARGET_KEY);
+});
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -19,7 +26,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'groupTabsByDomain') {
-    handleGroupTabsByDomain(request.currentWindowOnly, request.currentWindowId)
+    handleGroupTabsByDomain(
+      request.currentWindowOnly,
+      request.currentWindowId,
+      request.byGithubRepo
+    )
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
+  if (request.action === 'combineSingleTabWindows') {
+    handleCombineSingleTabWindows(request.mode)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
+  if (request.action === 'sortTabsInWindows') {
+    handleSortTabsInWindows(request)
       .then(result => sendResponse(result))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
@@ -41,10 +66,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Deduplicate exact HTTP(S) URLs, consolidate every eligible hostname into a
 // dedicated window, then open a one-shot before/after audit report.
-async function handleGroupTabsByDomain(currentWindowOnly, currentWindowId) {
+async function handleGroupTabsByDomain(currentWindowOnly, currentWindowId, byGithubRepo) {
   try {
     return await executeDomainGrouping(
-      { currentWindowOnly, currentWindowId },
+      { currentWindowOnly, currentWindowId, byGithubRepo },
       {
         planDomainGrouping,
         buildGroupingReport,
@@ -76,6 +101,51 @@ async function handleGroupTabsByDomain(currentWindowOnly, currentWindowId) {
   }
 }
 
+async function handleCombineSingleTabWindows(mode) {
+  try {
+    return await executeSingletonCombination(mode, {
+      captureNormalWindows,
+      moveTab: (tabId, windowId) => chrome.tabs.move(tabId, { windowId, index: -1 }),
+      createTargetWindow: async tabId => {
+        const targetWindow = await chrome.windows.create({
+          tabId,
+          focused: false,
+          type: 'normal'
+        });
+        if (!targetWindow || targetWindow.id === undefined) {
+          throw new Error('Could not create singleton catch-all window');
+        }
+        return targetWindow.id;
+      },
+      getPreferredTargetWindowId: async () => {
+        const stored = await chrome.storage.local.get(SINGLETON_TARGET_KEY);
+        return stored[SINGLETON_TARGET_KEY] ?? null;
+      },
+      savePreferredTargetWindowId: windowId => chrome.storage.local.set({
+        [SINGLETON_TARGET_KEY]: windowId
+      })
+    });
+  } catch (error) {
+    console.error('Single-tab window combination error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function handleSortTabsInWindows({ currentWindowOnly, currentWindowId, sortBy }) {
+  try {
+    return await executeWindowSort(
+      { currentWindowOnly, currentWindowId, sortBy },
+      {
+        captureNormalWindows,
+        moveTab: (tabId, windowId, index) => chrome.tabs.move(tabId, { windowId, index })
+      }
+    );
+  } catch (error) {
+    console.error('Window tab sorting error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 async function captureNormalWindows(domainByWindowId = new Map()) {
   const windows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
   const snapshot = [];
@@ -89,7 +159,9 @@ async function captureNormalWindows(domainByWindowId = new Map()) {
       tabs: tabs.map(tab => ({
         id: tab.id,
         title: tab.title || tab.url || 'Untitled tab',
-        url: tab.url || ''
+        url: tab.url || '',
+        pinned: tab.pinned === true,
+        groupId: Number.isInteger(tab.groupId) ? tab.groupId : -1
       }))
     });
   }
