@@ -22,6 +22,7 @@ test('temporary report surface and service-worker helpers are packaged source fi
     'grouping-report.js',
     'window-focus.js',
     'domain-grouping.js',
+    'tab-organization.js',
     'url-validation.js',
   ]) {
     assert.equal(fs.existsSync(path), true, path);

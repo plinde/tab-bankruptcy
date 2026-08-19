@@ -24,9 +24,9 @@ test('groups every HTTP(S) hostname, including singletons, in first-seen order',
 });
 
 test('deduplicates normalized exact URLs and records original-window provenance', () => {
-  const kept = tab('HTTPS://GITHUB.COM/org/repo/issues/1', 1, 'Issue first');
-  const removed2 = tab('https://github.com/org/repo/issues/1', 2, 'Issue second');
-  const removed3 = tab('https://github.com/org/repo/issues/1', 3, 'Issue third');
+  const kept = tab('HTTPS://GITHUB.COM/octo-org/octo-repo/issues/1', 1, 'Issue first');
+  const removed2 = tab('https://github.com/octo-org/octo-repo/issues/1', 2, 'Issue second');
+  const removed3 = tab('https://github.com/octo-org/octo-repo/issues/1', 3, 'Issue third');
   const plan = planDomainGrouping([
     window(1, 101, [kept]),
     window(2, 202, [removed2, removed3]),
@@ -35,7 +35,7 @@ test('deduplicates normalized exact URLs and records original-window provenance'
   assert.equal(plan.groups.length, 1);
   assert.deepEqual(plan.groups[0].tabs.map(item => item.id), [1]);
   assert.equal(plan.duplicates.length, 1);
-  assert.equal(plan.duplicates[0].url, 'https://github.com/org/repo/issues/1');
+  assert.equal(plan.duplicates[0].url, 'https://github.com/octo-org/octo-repo/issues/1');
   assert.equal(plan.duplicates[0].kept.windowNumber, 1);
   assert.deepEqual(plan.duplicates[0].removed.map(item => item.windowNumber), [2, 2]);
   assert.deepEqual(plan.duplicates[0].removed.map(item => item.tab.id), [2, 3]);
@@ -70,22 +70,19 @@ test('keeps distinct subdomains separate and preserves tab order', () => {
 test('splits github.com tabs by case-insensitive owner and repository slug', () => {
   const plan = planDomainGrouping([
     window(1, 101, [
-      tab('https://github.com/Elastic/Kibana', 1),
-      tab('https://github.com/elastic/kibana/issues/1', 2),
-      tab('https://github.com/elastic/elasticsearch/pull/2', 3),
-      tab('https://github.com/openai/codex', 4),
+      tab('https://github.com/Octo-Org/Octo-Repo', 1),
+      tab('https://github.com/octo-org/octo-repo/issues/1', 2),
+      tab('https://github.com/monalisa/octo-repo/pull/2', 3),
     ]),
-  ]);
+  ], { byGithubRepo: true });
 
   assert.deepEqual(plan.groups.map(group => group.domain), [
-    'github.com/elastic/kibana',
-    'github.com/elastic/elasticsearch',
-    'github.com/openai/codex',
+    'github.com/octo-org/octo-repo',
+    'github.com/monalisa/octo-repo',
   ]);
   assert.deepEqual(plan.groups.map(group => group.tabs.map(item => item.id)), [
     [1, 2],
     [3],
-    [4],
   ]);
 });
 
@@ -94,15 +91,28 @@ test('keeps github.com URLs without a repository slug in the hostname group', ()
     window(1, 101, [
       tab('https://github.com/', 1),
       tab('https://github.com/notifications', 2),
-      tab('https://github.com/elastic/kibana', 3),
+      tab('https://github.com/octo-org/octo-repo', 3),
     ]),
-  ]);
+  ], { byGithubRepo: true });
 
   assert.deepEqual(plan.groups.map(group => group.domain), [
     'github.com',
-    'github.com/elastic/kibana',
+    'github.com/octo-org/octo-repo',
   ]);
   assert.deepEqual(plan.groups.map(group => group.tabs.map(item => item.id)), [[1, 2], [3]]);
+});
+
+test('keeps all github.com tabs together by default', () => {
+  const plan = planDomainGrouping([
+    window(1, 101, [
+      tab('https://github.com/octo-org/octo-repo', 1),
+      tab('https://github.com/monalisa/octo-repo/issues/1', 2),
+      tab('https://github.com/notifications', 3),
+    ]),
+  ]);
+
+  assert.deepEqual(plan.groups.map(group => group.domain), ['github.com']);
+  assert.deepEqual(plan.groups[0].tabs.map(item => item.id), [1, 2, 3]);
 });
 
 test('ignores local, internal, non-HTTP, malformed, and missing URLs', () => {

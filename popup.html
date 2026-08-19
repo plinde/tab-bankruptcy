@@ -50,10 +50,41 @@
     <button id="groupButton" class="group-button">
       Group Tabs by Domain
     </button>
+    <label class="checkbox-label compact-option">
+      <input type="checkbox" id="byGithubRepo">
+      <span>Split GitHub tabs by repository</span>
+    </label>
     <p class="group-description">
-      Separates every HTTP(S) domain into its own window. GitHub tabs split by
-      repository. Removes exact duplicates and opens a before/after report.
+      Separates every HTTP(S) domain into its own window. Removes exact
+      duplicates and opens a before/after report.
     </p>
+
+    <div class="organize-section">
+      <label class="select-label" for="combineMode">Combine one-tab windows</label>
+      <select id="combineMode">
+        <option value="github">Into GitHub or a dedicated catch-all</option>
+        <option value="all">Together in the first one-tab window</option>
+      </select>
+      <button id="combineButton" class="organize-button">Combine Windows</button>
+      <p class="group-description">
+        Moves every singleton tab into a dedicated target, preferring an
+        existing GitHub window. Empty source windows close automatically.
+      </p>
+    </div>
+
+    <div class="organize-section">
+      <label class="select-label" for="sortBy">Sort tabs within each window</label>
+      <select id="sortBy">
+        <option value="title">By title</option>
+        <option value="url">By URL</option>
+        <option value="url-title">By URL, then title</option>
+      </select>
+      <button id="sortButton" class="organize-button">Sort Existing Windows</button>
+      <p class="group-description">
+        Reorders tabs in place. Does not create, combine, close, or regroup
+        windows. Honors the current-window option above.
+      </p>
+    </div>
 
     <div id="status" class="status"></div>
   </div>
