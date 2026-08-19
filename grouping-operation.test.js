@@ -86,10 +86,12 @@ test('separates every singleton domain into its own window and reports all state
 
 test('groups file and Chrome internal tabs into one window per scheme', async () => {
   const before = [window(1, 101, [
-    tab(1, 'file:///tmp/one.html'),
-    tab(2, 'file:///tmp/two.html'),
-    tab(3, 'chrome://extensions'),
-    tab(4, 'chrome://settings/privacy'),
+    tab(1, 'file://localhost/tmp/one.html'),
+    tab(2, 'file:///tmp/one.html'),
+    tab(3, 'file:///tmp/two.html'),
+    tab(4, 'chrome://extensions'),
+    tab(5, 'chrome://extensions'),
+    tab(6, 'chrome://settings/privacy'),
   ])];
   const { calls, dependencies } = harness(before, []);
 
@@ -99,13 +101,15 @@ test('groups file and Chrome internal tabs into one window per scheme', async ()
   );
 
   assert.equal(result.domainCount, 2);
+  assert.equal(result.duplicateCount, 2);
+  assert.deepEqual(calls[1], ['remove', [2, 5]]);
   assert.deepEqual(calls.filter(call => call[0] === 'create').map(call => call.slice(1, 3)), [
     [1, 'file://'],
-    [3, 'chrome://'],
+    [4, 'chrome://'],
   ]);
   assert.deepEqual(calls.filter(call => call[0] === 'move'), [
-    ['move', 2, 900],
-    ['move', 4, 901],
+    ['move', 3, 900],
+    ['move', 6, 901],
   ]);
 });
 

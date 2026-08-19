@@ -52,6 +52,24 @@ test('deduplicates normalized exact URLs and records original-window provenance'
   assert.deepEqual(plan.duplicates[0].removed.map(item => item.tab.id), [2, 3]);
 });
 
+test('deduplicates normalized file and exact Chrome URLs', () => {
+  const plan = planDomainGrouping([
+    window(1, 101, [
+      tab('file://localhost/tmp/a', 1),
+      tab('file:///tmp/a', 2),
+      tab('chrome://extensions', 3),
+      tab('chrome://extensions', 4),
+    ]),
+  ]);
+
+  assert.deepEqual(plan.groups.map(group => group.tabs.map(item => item.id)), [[1], [3]]);
+  assert.deepEqual(plan.duplicates.map(duplicate => duplicate.url), [
+    'file:///tmp/a',
+    'chrome://extensions',
+  ]);
+  assert.deepEqual(plan.duplicates.map(duplicate => duplicate.removed[0].tab.id), [2, 4]);
+});
+
 test('query and fragment differences are not exact duplicates', () => {
   const plan = planDomainGrouping([
     window(1, 101, [
