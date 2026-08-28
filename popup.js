@@ -35,7 +35,7 @@ function showStatus(message, isError = false) {
 }
 
 function setActionButtonsDisabled(disabled) {
-  for (const id of ['bankruptButton', 'groupButton', 'combineButton', 'sortButton']) {
+  for (const id of ['bankruptButton', 'groupButton', 'combineButton', 'consolidateButton', 'sortButton']) {
     document.getElementById(id).disabled = disabled;
   }
 }
@@ -139,6 +139,33 @@ document.getElementById('combineButton').addEventListener('click', async () => {
   } finally {
     setActionButtonsDisabled(false);
     button.textContent = 'Combine Windows';
+  }
+});
+
+document.getElementById('consolidateButton').addEventListener('click', async () => {
+  const button = document.getElementById('consolidateButton');
+  setActionButtonsDisabled(true);
+  button.textContent = 'Consolidating...';
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'consolidateAllTabs'
+    });
+    if (response.success) {
+      const message = response.consolidated
+        ? `Consolidated ${response.tabCount} tabs from ${response.windowCount} windows into one; ` +
+          `removed ${response.duplicateCount} duplicates.`
+        : 'Nothing to consolidate — tabs already live in a single window.';
+      showStatus(message);
+      setTimeout(updateStats, 1000);
+    } else {
+      showStatus(`Error: ${response.error}`, true);
+    }
+  } catch (error) {
+    showStatus(`Error: ${error.message}`, true);
+  } finally {
+    setActionButtonsDisabled(false);
+    button.textContent = 'Consolidate All Tabs/Windows';
   }
 });
 

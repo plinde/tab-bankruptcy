@@ -127,6 +127,29 @@ packaging, and publishing remain separate explicit release operations.
 - Pure planners and injected browser operations are unit-tested in
   `tab-organization.test.js`
 
+**Tab Consolidation** (`tab-consolidation.js`):
+- "Consolidate all tabs/windows": popup sends `{action: 'consolidateAllTabs'}`;
+  `handleConsolidateAllTabs()` runs `executeTabConsolidation()`
+- `planTabConsolidation()` is a pure function (no `chrome.*`) that walks every
+  normal, non-incognito window in window-then-tab order, keeps the first
+  occurrence of each normalized `new URL(url).href`, and records every later
+  exact-URL duplicate for removal. Blank or unparseable URLs are always kept and
+  never deduplicated. Survivors are ordered by base domain (`domain.tld`, the
+  last two hostname labels, so subdomains fold together) via `baseDomain()`,
+  stable within a domain by discovery order; hostless tabs (`file://`,
+  `chrome://newtab`, blank) group under an empty key
+- `executeTabConsolidation()` removes duplicate tabs, opens one new focused
+  window from the first kept tab, and moves the remaining kept tabs into it in
+  discovery order. Emptied source windows close on their own once their last tab
+  moves out, so the previous windows disappear
+- Incognito windows are left untouched to avoid invalid regular/incognito moves.
+  The current-window option does not apply — consolidation always spans the whole
+  profile
+- No-op safety: when every tab already lives in a single window with no
+  duplicates, it makes no changes and reports `consolidated: false`
+- Pure planner and injected browser operations are unit-tested in
+  `tab-consolidation.test.js`
+
 **Profile Scope Disclosure** (`updateProfileDisclosure()` in popup.js):
 - The popup shows `Running as: <account-email>` for the current profile, plus a
   static warning that other profiles are unaffected and must be run separately
