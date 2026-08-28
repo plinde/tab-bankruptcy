@@ -134,7 +134,10 @@ packaging, and publishing remain separate explicit release operations.
   normal, non-incognito window in window-then-tab order, keeps the first
   occurrence of each normalized `new URL(url).href`, and records every later
   exact-URL duplicate for removal. Blank or unparseable URLs are always kept and
-  never deduplicated
+  never deduplicated. Survivors are ordered by base domain (`domain.tld`, the
+  last two hostname labels, so subdomains fold together) via `baseDomain()`,
+  stable within a domain by discovery order; hostless tabs (`file://`,
+  `chrome://newtab`, blank) group under an empty key
 - `executeTabConsolidation()` removes duplicate tabs, opens one new focused
   window from the first kept tab, and moves the remaining kept tabs into it in
   discovery order. Emptied source windows close on their own once their last tab

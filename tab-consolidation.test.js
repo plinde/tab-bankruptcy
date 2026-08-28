@@ -4,6 +4,7 @@ const {
   planTabConsolidation,
   executeTabConsolidation,
   normalizeUrl,
+  baseDomain,
 } = require('./tab-consolidation.js');
 
 const tab = (id, url, title = url) => ({ id, url, title });
@@ -71,6 +72,33 @@ test('single window with duplicates still needs work', () => {
 
   assert.equal(plan.needsWork, true);
   assert.deepEqual(plan.duplicateTabIds, [2]);
+});
+
+test('groups kept tabs by base domain, folding in subdomains and preserving order within a domain', () => {
+  const plan = planTabConsolidation([
+    window(101, [
+      tab(1, 'https://zebra.example/a'),
+      tab(2, 'https://sub.apple.example/x'),
+      tab(3, 'https://apple.example/y'),
+    ]),
+    window(202, [
+      tab(4, 'https://zebra.example/b'),
+      tab(5, 'https://apple.example/z'),
+    ]),
+  ]);
+
+  // apple.example sorts before zebra.example; sub.apple.example folds into
+  // apple.example; discovery order breaks ties within each base domain.
+  assert.deepEqual(plan.keptTabs.map(t => t.id), [2, 3, 5, 1, 4]);
+});
+
+test('baseDomain returns the last two hostname labels, empty for hostless URLs', () => {
+  assert.equal(baseDomain('https://sub.deep.example.com/x'), 'example.com');
+  assert.equal(baseDomain('https://Example.COM/'), 'example.com');
+  assert.equal(baseDomain('http://localhost/'), 'localhost');
+  assert.equal(baseDomain('file:///tmp/x'), '');
+  assert.equal(baseDomain('not a url'), '');
+  assert.equal(baseDomain(''), '');
 });
 
 test('normalizeUrl returns null for blank and malformed input', () => {

@@ -35,11 +35,36 @@ function planTabConsolidation(windows) {
     }
   }
 
+  // Group the survivors by base domain ("domain.tld", subdomains folded in) so
+  // same-site tabs sit together in the consolidated window. Stable within a
+  // domain: discovery order is preserved for ties.
+  const orderedKeptTabs = keptTabs
+    .map((tab, index) => ({ tab, index, key: baseDomain(tab.url) }))
+    .sort((left, right) => left.key.localeCompare(right.key) || left.index - right.index)
+    .map(entry => entry.tab);
+
   const sourceWindowCount = sourceWindowIds.size;
   // Nothing to do when everything already lives in one window with no duplicates.
   const needsWork = duplicateTabIds.length > 0 || sourceWindowCount > 1;
 
-  return { keptTabs, duplicateTabIds, sourceWindowCount, needsWork };
+  return { keptTabs: orderedKeptTabs, duplicateTabIds, sourceWindowCount, needsWork };
+}
+
+// Base registrable-ish domain: the last two hostname labels ("domain.tld"),
+// which folds every subdomain of a site into one sort key. Returns '' for tabs
+// with no hostname (file://, chrome://newtab, blank, or malformed URLs) so they
+// group together rather than scatter.
+function baseDomain(url) {
+  if (typeof url !== 'string' || url === '') return '';
+  let hostname;
+  try {
+    hostname = new URL(url).hostname;
+  } catch (error) {
+    return '';
+  }
+  if (!hostname) return '';
+  const labels = hostname.toLowerCase().split('.').filter(Boolean);
+  return labels.slice(-2).join('.');
 }
 
 function normalizeUrl(url) {
@@ -90,5 +115,5 @@ async function executeTabConsolidation(dependencies) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { planTabConsolidation, executeTabConsolidation, normalizeUrl };
+  module.exports = { planTabConsolidation, executeTabConsolidation, normalizeUrl, baseDomain };
 }

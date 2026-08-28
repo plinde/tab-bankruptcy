@@ -115,8 +115,9 @@ Chrome may close an original window when grouping moves out its last tab. A
 ### Consolidate all tabs into one window
 
 1. Click **Consolidate All Tabs/Windows**
-2. Every tab across all normal windows is gathered into a single new window in
-   its original window/tab discovery order
+2. Every tab across all normal windows is gathered into a single new window,
+   ordered by base domain (`domain.tld`, so subdomains sit next to each other);
+   tabs of the same domain keep their original discovery order
 3. Exact-URL duplicates are removed, keeping the first occurrence; query-string
    and fragment differences are preserved as distinct tabs
 4. The windows you emptied close automatically once their last tab moves out
