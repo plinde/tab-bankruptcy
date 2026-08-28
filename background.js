@@ -5,6 +5,7 @@ importScripts(
   'url-validation.js',
   'domain-grouping.js',
   'tab-organization.js',
+  'tab-consolidation.js',
   'grouping-report.js',
   'grouping-operation.js',
   'window-focus.js'
@@ -38,6 +39,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === 'combineSingleTabWindows') {
     handleCombineSingleTabWindows(request.mode)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
+  if (request.action === 'consolidateAllTabs') {
+    handleConsolidateAllTabs()
       .then(result => sendResponse(result))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
@@ -127,6 +135,32 @@ async function handleCombineSingleTabWindows(mode) {
     });
   } catch (error) {
     console.error('Single-tab window combination error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Gather every tab across the profile's normal windows into a single new window,
+// dropping exact-URL duplicates. Emptied source windows close on their own.
+async function handleConsolidateAllTabs() {
+  try {
+    return await executeTabConsolidation({
+      captureNormalWindows,
+      removeTabs: tabIds => chrome.tabs.remove(tabIds),
+      createTargetWindow: async tabId => {
+        const targetWindow = await chrome.windows.create({
+          tabId,
+          focused: true,
+          type: 'normal'
+        });
+        if (!targetWindow || targetWindow.id === undefined) {
+          throw new Error('Could not create consolidated window');
+        }
+        return targetWindow.id;
+      },
+      moveTab: (tabId, windowId) => chrome.tabs.move(tabId, { windowId, index: -1 })
+    });
+  } catch (error) {
+    console.error('Tab consolidation error:', error);
     return { success: false, error: error.message };
   }
 }

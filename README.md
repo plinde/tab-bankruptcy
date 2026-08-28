@@ -14,6 +14,9 @@ Declare tab bankruptcy and save all your open tabs to bookmarks before starting 
   `file://` tabs and all `chrome://` tabs into one window per scheme. An optional
   setting splits `github.com` tabs further by owner/repository slug. Cross-window
   grouping leaves incognito windows untouched
+- **Consolidate All Tabs/Windows**: Merges every tab from all normal windows into
+  a single new window, dropping exact-URL duplicates. Emptied windows close on
+  their own; incognito windows stay untouched
 - **Grouping Audit Report**: Opens a temporary before/after report containing
   every normal window, tab title, URL, and exact-duplicate provenance
 - **Window Links**: Every report card can focus its corresponding live browser
@@ -109,6 +112,20 @@ Chrome may close an original window when grouping moves out its last tab. A
 **Previous state** focus button reports that such a window is unavailable;
 **Grouped state** buttons focus the newly-created destination windows.
 
+### Consolidate all tabs into one window
+
+1. Click **Consolidate All Tabs/Windows**
+2. Every tab across all normal windows is gathered into a single new window in
+   its original window/tab discovery order
+3. Exact-URL duplicates are removed, keeping the first occurrence; query-string
+   and fragment differences are preserved as distinct tabs
+4. The windows you emptied close automatically once their last tab moves out
+5. Incognito windows are left untouched, and the **Current window only** option
+   does not apply — consolidation always spans the whole profile
+
+When every tab already lives in a single window with no duplicates, the button
+reports there is nothing to consolidate and makes no changes.
+
 ## Bookmark Structure
 
 Bookmarks are organized as follows:
@@ -161,6 +178,8 @@ tab-bankruptcy/
 ├── grouping-report.test.js # Unit tests for report data
 ├── grouping-operation.js # Injected/testable browser-operation orchestration
 ├── grouping-operation.test.js # Mutation order, scope, and failure tests
+├── tab-consolidation.js  # Pure dedupe planner + injected consolidation executor
+├── tab-consolidation.test.js # Planner and consolidation-execution tests
 ├── window-focus.js      # Validated report-to-window focus operation
 ├── window-focus.test.js # Valid, invalid, and closed-window focus tests
 ├── report.html/js/css   # Temporary before/after grouping report
